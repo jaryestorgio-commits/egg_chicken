@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Log in | Egg &amp; Chicken</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/auth.css">
+</head>
+<body data-root="../">
+    <div id="navbar"></div>
+    <main id="main" class="login-main">
+        <div class="login-shell">
+            <aside class="login-visual" aria-label="Farm fresh eggs and free-ranging hens">
+                <img src="../assets/images/3uzIZOxfYkZuxVvHAWzqiQQ52R4BYagHNC2KhAETj-YT037gKXSsihJ_RMAVchMdogM86qimzYkvpJDk0eoMgzHaGH-t-ii9eXwCjShsSqzpyw7VB8nS9OWkRc-qMNe7jBuLCUOpAZ36RqjU9sqQRvcISsYHppWHMkmJgq_LnYtH3Ny6G0gSP_qMS8gQzjnk.jpg" alt="Fresh eggs gathered on a local farm">
+                <div class="login-visual-copy">
+                    <span class="login-visual-mark" aria-hidden="true">🥚</span>
+                    <p class="eyebrow">Fresh from trusted farms</p>
+                    <h2>Good food begins with good farms.</h2>
+                    <p>Carefully sourced eggs and chicken, brought from our local farms to your table.</p>
+                    <span class="login-visual-caption">Locally raised · Carefully gathered · Always fresh</span>
+                </div>
+            </aside>
+            <section class="login-panel" aria-labelledby="login-title">
+                <a class="login-brand" href="../index.html" aria-label="Egg and Chicken home">
+                    <span class="login-brand-egg" aria-hidden="true">🥚</span>
+                    <span>Egg <i>&amp;</i> Chicken</span>
+                </a>
+                <p class="eyebrow login-eyebrow">Welcome back</p>
+                <h1 id="login-title">Log in to your account</h1>
+                <p class="login-intro">Sign in to shop fresh, track your orders, and manage your account.</p>
+                <form id="form" class="login-form" novalidate>
+                    <label for="email">Email address</label>
+                    <div class="login-input-wrap">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg>
+                        <input id="email" name="email" type="email" required autocomplete="email" placeholder="you@example.com">
+                    </div>
+                    <label for="pw">Password</label>
+                    <div class="login-input-wrap">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+                        <input id="pw" name="password" type="password" required autocomplete="current-password" placeholder="Enter your password">
+                        <button class="password-toggle" type="button" id="toggle-password" aria-label="Show password" aria-pressed="false">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
+                    <div class="login-options">
+                        <label class="remember-option" for="remember">
+                            <input id="remember" name="remember" type="checkbox" checked>
+                            <span>Remember me</span>
+                        </label>
+                        <a href="#forgot-password" id="forgot-password">Forgot password?</a>
+                    </div>
+                    <p class="login-help" id="login-help" role="status" hidden>Password reset isn’t available online yet. Please contact the store team for help.</p>
+                    <p class="login-message error" id="err" role="alert"></p>
+                    <p class="login-success" id="login-success" role="status" hidden></p>
+                    <button class="btn btn-primary login-submit" type="submit">Log In <span aria-hidden="true">→</span></button>
+                </form>
+                <p class="login-register">New to Egg &amp; Chicken? <a href="register.html">Create an account</a></p>
+                <p class="login-secure"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Your account is protected with secure sign-in.</p>
+            </section>
+        </div>
+    </main>
+    <div id="footer"></div>
+    <div id="toast" role="status" aria-live="polite"></div>
+    <script src="../js/main.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>document.addEventListener("shell:ready",()=>bindAuth("login"))</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+<article class="card pcard hover">
+<button class="fav" type="button" aria-label="Add {{name}} to wishlist" aria-pressed="{{favorite}}" data-fav="{{id}}">{{favoriteIcon}}</button>
+<a href="{{root}}pages/product-details.html?id={{id}}" class="art" aria-label="{{name}}">{{visual}}</a>
+<div class="body"><small>{{category}}</small><h3><a href="{{root}}pages/product-details.html?id={{id}}">{{name}}</a></h3>
+<p>{{description}}</p><span class="stock {{stockClass}}">{{stockText}}</span>
+<div class="row"><span class="price">{{priceText}}</span><button class="btn btn-primary btn-sm" data-add="{{id}}" {{disabled}}>Add to Cart</button></div></div></article>

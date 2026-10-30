@@ -1,0 +1,29 @@
+<header class="nav"><div class="wrap">
+<a class="logo" href="{{root}}index.html"><i></i>Egg &amp; Chicken</a>
+<ul class="menu" id="menu">
+<li><a href="{{root}}index.html">Home</a></li><li><a href="{{root}}pages/products.html">Shop</a></li>
+<li><a href="{{root}}pages/products.html?cat=eggs">Fresh Eggs</a></li><li><a href="{{root}}pages/products.html?cat=whole">Chicken</a></li>
+<li><a href="{{root}}pages/products.html?cat=bundles">Bundles</a></li><li><a href="{{root}}index.html#farm">Our Farm</a></li><li><a href="{{root}}index.html#recipes">Recipes</a></li><li class="menu-order"><a href="{{root}}pages/products.html">Buy Now</a></li></ul>
+<div class="nav-actions">
+<a class="icon-btn" href="{{root}}pages/products.html" aria-label="Search">Search</a>
+<a class="icon-btn" href="{{root}}pages/cart.html" aria-label="Cart">Cart<span class="badge" id="cart-count">0</span></a>
+<a class="icon-btn nav-auth" href="{{root}}pages/login.html" aria-label="Log In">Log In</a>
+<a class="btn btn-primary btn-sm" href="{{root}}pages/products.html">Buy Now</a>
+<button class="icon-btn burger" id="burger" type="button" aria-label="Open navigation menu" aria-controls="menu" aria-expanded="false"><span aria-hidden="true">☰</span><span class="burger-label">Menu</span></button></div></div></header>
+<nav class="mobile-bottom-nav" aria-label="Customer navigation">
+<a class="mobile-nav-item" data-mobile-nav="home" href="{{root}}index.html">
+<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-6v-7h-4v7H4a1 1 0 0 1-1-1z"/></svg><span>Home</span>
+</a>
+<a class="mobile-nav-item" data-mobile-nav="shop" href="{{root}}pages/products.html">
+<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l1 16H3L4 5z"/><path d="M8 9V7a4 4 0 0 1 8 0v2"/></svg><span>Shop</span>
+</a>
+<a class="mobile-nav-item mobile-nav-cart" data-mobile-nav="cart" href="{{root}}pages/cart.html" aria-label="Cart">
+<span class="mobile-cart-button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h8.9a2 2 0 0 0 1.9-1.4L22 9H6"/><circle cx="10" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg><span class="mobile-cart-badge" data-cart-count aria-hidden="true">…</span></span><span>Cart</span>
+</a>
+<a class="mobile-nav-item" data-mobile-nav="orders" href="{{root}}pages/orders.html">
+<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10a2 2 0 0 1 2 2v16l-7-4-7 4V5a2 2 0 0 1 2-2z"/><path d="M9 8h6M9 12h6"/></svg><span>Orders</span>
+</a>
+<a class="mobile-nav-item" data-mobile-nav="profile" href="{{root}}pages/login.html">
+<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span>Profile</span>
+</a>
+</nav>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Reports &amp; Analytics | Egg &amp; Chicken Admin</title>
+	<link rel="stylesheet" href="../css/style.css">
+	<link rel="stylesheet" href="../css/admin.css">
+</head>
+<body data-admin-page="reports">
+	<div class="admin-shell">
+		<aside class="admin-sidebar" id="admin-sidebar">
+			<a class="admin-brand" href="dashboard.html"><span class="admin-brand-mark" aria-hidden="true">E</span><span>Egg &amp; Chicken<small>Store administration</small></span></a>
+			<nav class="admin-nav" aria-label="Admin navigation">
+				<a href="dashboard.html">Overview</a><a href="products.html">Products</a><a href="inventory.html">Inventory</a><a href="orders.html">Orders</a><a href="customers.html">Customers</a><a class="active" aria-current="page" href="reports.html">Reports &amp; analytics</a><a href="messages.html">Messages &amp; support</a>
+			</nav>
+			<div class="admin-sidebar-footer"><a href="account.html">Settings</a><button class="admin-logout" type="button" data-admin-logout>Sign out</button><a class="store-link" href="../index.html">View storefront</a></div>
+		</aside>
+		<button class="admin-drawer-backdrop" type="button" aria-label="Close navigation" data-admin-menu-close></button>
+		<main class="admin-main">
+			<header class="admin-topbar"><div class="admin-heading"><button class="admin-menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="admin-sidebar" data-admin-menu-toggle>☰</button><div><p class="eyebrow">Store performance</p><h1>Reports &amp; analytics</h1><p class="admin-subtitle">Sales and order insights based on recorded store activity.</p></div></div><div class="admin-actions"><span class="admin-greeting" data-admin-greeting></span><button class="btn btn-outline btn-sm" id="admin-refresh" type="button">Refresh</button></div></header>
+			<div class="admin-alert" id="admin-error" role="alert" hidden></div>
+			<div class="admin-toast" id="admin-toast" role="status" aria-live="polite"></div>
+			<section class="admin-panel">
+				<div class="admin-section-heading"><div><p class="eyebrow">Date range</p><h2>Choose a reporting period</h2></div></div>
+				<form class="admin-toolbar admin-date-filter" id="reports-filter">
+					<label for="reports-start">From</label><input id="reports-start" name="start_date" type="date" required>
+					<label for="reports-end">To</label><input id="reports-end" name="end_date" type="date" required>
+					<button class="btn btn-primary" type="submit">Apply dates</button>
+				</form>
+				<p class="admin-muted" id="reports-range-caption">Loading report range…</p>
+			</section>
+			<section class="admin-stat-grid admin-report-stats" id="reports-stats" aria-label="Report summary"><div class="admin-loading" role="status">Loading report summary…</div></section>
+			<div class="admin-dashboard-grid admin-reports-grid">
+				<section class="admin-panel admin-chart-panel"><div class="admin-section-heading"><div><p class="eyebrow">Paid payments</p><h2>Revenue over time</h2></div></div><div class="admin-chart" id="reports-sales-chart" role="img" aria-label="Paid revenue for the selected date range"><div class="admin-loading" role="status">Loading sales data…</div></div></section>
+				<section class="admin-panel"><div class="admin-section-heading"><div><p class="eyebrow">Order activity</p><h2>Orders by status</h2></div></div><div class="admin-status-grid admin-report-statuses" id="reports-order-statuses"><div class="admin-loading" role="status">Loading order statistics…</div></div></section>
+			</div>
+			<section class="admin-panel"><div class="admin-section-heading"><div><p class="eyebrow">Product performance</p><h2>Best-selling products</h2></div><a class="admin-text-link" href="products.html">Manage products →</a></div><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Product</th><th>Units sold</th><th>Order value</th></tr></thead><tbody id="reports-product-rows"><tr><td colspan="3" class="admin-empty">Loading product performance…</td></tr></tbody></table></div></section>
+		</main>
+	</div>
+	<script src="../js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+        <title>Checkout | Egg &amp; Chicken</title>
+        <link rel="stylesheet" href="../css/style.css">
+        <link rel="stylesheet" href="../css/checkout.css"></head>
+<body data-root="../">
+    <div id="navbar"></div>
+    <main id="main">
+        <div class="wrap">
+            <div class="page-title">
+                <h1 style="font-size:2.6rem">Checkout</h1>
+            </div><form id="form" class="layout" novalidate>
+                <div class="card">
+            <h3>Customer information</h3>
+            <label for="name">Full name</label>
+            <input id="name" name="name" required autocomplete="name">
+            <div class="fgrid"><div>
+                <label for="email">Email</label>
+                <input id="email" name="email" type="email" required></div>
+                <div><label for="phone">Phone</label>
+                    <input id="phone" name="phone" type="tel" required></div></div>
+            <h3 style="margin-top:28px">Delivery address</h3>
+            <label for="addr">Address</label>
+            <input id="addr" name="address" required>
+            <div class="fgrid"><div>
+                <label for="brgy">Barangay</label>
+                <input id="brgy" name="barangay" required></div>
+                <div><label for="city">Municipality/City</label>
+                    <input id="city" name="city" required></div><div>
+                        <label for="prov">Province</label>
+                        <input id="prov" name="province" required></div><div>
+                            <label for="zip">Postal code</label>
+                            <input id="zip" name="zip" required></div></div>
+                                <h3 style="margin-top:28px">Delivery option</h3>
+                                <label class="opt">
+                                    <input type="radio" name="delivery" value="standard" checked> Standard Delivery</label>
+                                    <label class="opt">
+                                        <input type="radio" name="delivery" value="pickup"> Farm Pickup (free)</label>
+                                    <h3 style="margin-top:28px">Payment</h3>
+                                    <label class="opt">
+                                        <input type="radio" name="payment" value="cod" checked> Cash on Delivery</label>
+                                        <label class="opt">
+                                            <input type="radio" name="payment" value="online"> Online payment (Xendit sandbox hosted checkout)</label></div>
+                                <aside class="card sum"><h3>Order summary</h3>
+                                    <div id="items" style="display:block"></div><div>
+                                        <span>Subtotal</span><span id="csub"></span></div><div><span>Delivery</span>
+                                            <span id="cfee"></span></div>
+                                            <div class="total"><span>Total</span><span id="ctotal"></span></div>
+                             <p class="error" id="err" role="alert"></p>
+                             <button class="btn btn-primary" id="place" style="width:100%;margin-top:10px">Place Order</button></aside></form></div></main>
+                             <div id="footer"></div><div id="toast" role="status" aria-live="polite"></div>
+                             <script src="../js/main.js"></script><script src="../js/cart.js"></script><script src="../js/checkout.js"></script><script>document.addEventListener("shell:ready",initCheckout)
+
+                             </script>
+                             </body>
+                             </html>

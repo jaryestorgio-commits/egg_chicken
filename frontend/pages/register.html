@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head><meta charset="utf-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+        <title>Register | Egg &amp; Chicken</title>
+        <link rel="stylesheet" href="../css/style.css"><link rel="stylesheet" href="../css/auth.css"></head>
+
+<body data-root="../" data-auth-page="register">
+    <div id="navbar"></div>
+    <main id="main" class="register-main">
+        <div class="register-shell">
+            <aside class="register-visual">
+                <img src="../assets/images/dQ4lxeApBk_Adllm_0utRh4e9_3IRTjp-j76JdJ0jwj8mrwmTtpvLsq2-lh2UZipwbt0_c05A3Co0sg10S63uPxA-givLyjl8MDMzvSMwvm4k2MDeVst8nX09CXo3sbA9UqA1hHulU_am6PdohDQZEwjke5eaVw1YKnL_s3E1fZa1rUsSsj6Usmbo1coHNfm.jpg" alt="Free-ranging hens on a local farm">
+                <div class="register-visual-copy">
+                    <h1 class="eyebrow">Fresh from trusted farms</h1>   
+                    <h2>Good food begins with good farms.</h2>
+                    <p>Join the community bringing carefully sourced eggs and chicken to the table.</p>
+                </div>
+            </aside>
+            <section class="register-panel" aria-labelledby="register-title">
+                <p class="eyebrow">Join Egg &amp; Chicken</p>
+                <h1 id="register-title">Create your account</h1>
+                <p class="register-intro">Set up your customer account to shop fresh and track your orders.</p>
+                <div class="register-role" aria-label="Account role: Customer">
+                    <span>Account role</span><strong>Customer</strong>
+                    <small>Admin access is assigned separately.</small>
+                </div>
+                <form id="form" novalidate>
+                    <label for="n">Full name</label>
+                    <input id="n" name="name" required maxlength="120" autocomplete="name" placeholder="Your full name">
+                    <label for="email">Email address</label>
+                    <input id="email" name="email" type="email" required maxlength="120" autocomplete="email" placeholder="you@example.com">
+                    <label for="pw">Password</label>
+                    <input id="pw" name="password" type="password" minlength="8" required autocomplete="new-password" placeholder="At least 8 characters">
+                    <p class="error" id="err" role="alert"></p>
+                    <button class="btn btn-primary register-submit" type="submit">Create customer account</button>
+                </form>
+                <p class="register-login">Already have an account? <a href="login.html"><b>Log in</b></a></p>
+            </section>
+        </div>
+    </main>
+    <div id="footer"></div>
+    <div id="toast" role="status" aria-live="polite"></div>
+    <script src="../js/main.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>document.addEventListener("shell:ready",()=>bindAuth("register"))</script>
+</body>
+</html> 

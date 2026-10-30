@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<title>Account &amp; settings | Egg &amp; Chicken Admin</title>
+	<link rel="stylesheet" href="../css/style.css">
+	<link rel="stylesheet" href="../css/admin.css">
+</head>
+<body data-admin-page="account">
+	<div class="admin-shell">
+		<aside class="admin-sidebar" id="admin-sidebar"><a class="admin-brand" href="dashboard.html"><span class="admin-brand-mark" aria-hidden="true">E</span><span>Egg &amp; Chicken<small>Store administration</small></span></a><nav class="admin-nav" aria-label="Admin navigation"><a href="dashboard.html">Overview</a><a href="products.html">Products</a><a href="inventory.html">Inventory</a><a href="orders.html">Orders</a><a href="customers.html">Customers</a><a href="reports.html">Reports &amp; analytics</a><a href="messages.html">Messages &amp; support</a></nav><div class="admin-sidebar-footer"><a class="active" aria-current="page" href="account.html">Settings</a><button class="admin-logout" type="button" data-admin-logout>Sign out</button><a class="store-link" href="../index.html">View storefront</a></div></aside>
+		<button class="admin-drawer-backdrop" type="button" aria-label="Close navigation" data-admin-menu-close></button>
+		<main class="admin-main">
+			<header class="admin-topbar"><div class="admin-heading"><button class="admin-menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="admin-sidebar" data-admin-menu-toggle>☰</button><div><p class="eyebrow">Preferences &amp; security</p><h1>Settings</h1><p class="admin-subtitle">Manage the profile and security for your admin account.</p></div></div><div class="admin-actions"><span class="admin-greeting" data-admin-greeting></span></div></header>
+			<div class="admin-alert" id="admin-error" role="alert" hidden></div><div class="admin-toast" id="admin-toast" role="status" aria-live="polite"></div>
+			<section class="admin-panel admin-account-panel"><p class="eyebrow">Administrator profile</p><h2>Profile information</h2><p class="admin-muted">Update the name and email address associated with your authenticated administrator account.</p><form id="admin-profile-form" class="admin-form" novalidate><label for="admin-profile-name">Name</label><input id="admin-profile-name" name="name" maxlength="120" required autocomplete="name"><label for="admin-profile-email">Email address</label><input id="admin-profile-email" name="email" type="email" maxlength="120" required autocomplete="email"><p class="error" id="admin-profile-error" role="alert"></p><button class="btn btn-primary" type="submit">Save profile</button></form></section>
+			<section class="admin-panel admin-account-panel"><p class="eyebrow">Security</p><h2>Change password</h2><p class="admin-muted">Confirm your current password before choosing a new one.</p><form id="admin-password-form" class="admin-form" novalidate><label for="admin-current-password">Current password</label><input id="admin-current-password" name="current_password" type="password" maxlength="256" required autocomplete="current-password"><label for="admin-new-password">New password</label><input id="admin-new-password" name="new_password" type="password" minlength="8" maxlength="256" required autocomplete="new-password"><p class="error" id="admin-password-error" role="alert"></p><button class="btn btn-primary" type="submit">Update password</button></form></section>
+		</main>
+	</div>
+	<script src="../js/admin.js"></script>
+</body>
+</html>

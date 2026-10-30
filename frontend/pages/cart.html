@@ -1,0 +1,44 @@
+        <!DOCTYPE html>
+        <html lang="en"><head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width,initial-scale=1">
+            <title>Cart | Egg &amp; Chicken</title>
+            <link rel="stylesheet" href="../css/style.css">
+            <link rel="stylesheet" href="../css/cart.css">
+        </head>
+        <body data-root="../">
+            <div id="navbar"></div>
+            <main id="main">
+                <div class="wrap">
+                    <div class="page-title">
+                        <h1 style="font-size:2.6rem">Your Cart</h1>
+                    </div>
+                    <div class="layout">
+                        <div class="card" id="lines"></div>
+                        <aside class="card sum">
+                            <h3>Order total</h3>
+                            <div>
+                                <span>Subtotal</span>
+                                <span id="sub"></span>
+                            </div>
+                            <div>
+                                <span>Delivery fee</span>
+                                <span id="fee"></span>
+                            </div>
+                            <div class="total">
+                                <span>Total</span>
+                                <span id="total"></span>
+                            </div>
+                            <a id="go" class="btn btn-primary" style="width:100%;margin-top:14px" href="checkout.html">Proceed to Checkout</a>
+                            <a class="btn btn-outline" style="width:100%;margin-top:10px" href="products.html">Continue Shopping</a>
+                        </aside>
+                    </div>
+                </div>
+            </main>
+            <div id="footer"></div>
+            <div id="toast" role="status" aria-live="polite"></div>
+            <script src="../js/main.js"></script>
+            <script src="../js/cart.js"></script>
+            <script>document.addEventListener("shell:ready",renderCart)</script>
+        </body>
+        </html>

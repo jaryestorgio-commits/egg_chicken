@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+        <title>Shop | Egg &amp; Chicken</title>
+        <link rel="stylesheet" href="../css/style.css"><link rel="stylesheet" href="../css/products.css"></head>
+<body data-root="../">
+    
+    <div id="navbar">
+
+    </div><main id="main">
+        <div class="wrap">
+            <div class="page-title">
+                <h1 style="font-size:2.6rem">Shop</h1>
+                <p>Fresh eggs, chicken and bundles from local farms.</p></div>
+<div class="toolbar">
+    <input id="q" type="search" placeholder="Search products" aria-label="Search products">
+    <select id="sort" aria-label="Sort">
+        <option value="featured">Featured</option>
+        <option value="low">Price: Low to High</option>
+        <option value="high">Price: High to Low</option>
+        <option value="newest">Newest</option></select>
+        <div class="chips" id="chips"></div></div>
+<div class="grid g3" id="grid"></div></div></main>
+<div id="footer"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="../js/main.js">
+
+</script>
+<script src="../js/products.js"></script>
+<script>document.addEventListener("shell:ready",initShop)
+
+</script>
+</body>
+</html>

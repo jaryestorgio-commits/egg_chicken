@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Egg &amp; Chicken | Fresh from the farm</title>
+    <link rel="stylesheet" href="css/style.css"><link rel="stylesheet" href="css/products.css">
+    <style>
+        .home-logo{display:flex;flex-direction:column;align-items:flex-start;width:max-content;max-width:100%;margin-bottom:20px;opacity:0;animation:home-logo-enter .8s ease-out .1s forwards}
+        .home-logo-art{width:122px;height:94px;overflow:visible;animation:home-logo-float 5s ease-in-out 1s infinite}
+        .home-logo-egg{transform-box:fill-box;transform-origin:center;animation:home-egg-glow 3.6s ease-in-out 1s infinite}
+        .home-logo-name{margin-top:2px;color:#18372b;font-family:Manrope,"DM Sans",sans-serif;font-size:1.45rem;font-weight:800;letter-spacing:-.045em;line-height:1.1}
+        @keyframes home-logo-enter{to{opacity:1;transform:translateY(0)}from{opacity:0;transform:translateY(12px)}}
+        @keyframes home-logo-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+        @keyframes home-egg-glow{0%,100%{filter:drop-shadow(0 0 2px rgba(229,184,79,.28))}50%{filter:drop-shadow(0 0 8px rgba(229,184,79,.68))}}
+        @media(max-width:600px){.home-logo{margin-bottom:16px}.home-logo-art{width:104px;height:80px}.home-logo-name{font-size:1.3rem}}
+        @media(prefers-reduced-motion:reduce){.home-logo,.home-logo-art,.home-logo-egg{animation:none;opacity:1;transform:none;filter:none}}
+    </style>
+</head>
+
+<body data-root="">
+<div id="navbar"></div>
+<main>
+<section class="hero">
+    <div class="wrap"><div>
+<div class="home-logo" role="img" aria-label="Egg and Chicken, featuring a hen beside a golden egg">
+    <svg class="home-logo-art" viewBox="0 0 180 130" aria-hidden="true">
+        <ellipse class="home-logo-egg" cx="53" cy="76" rx="28" ry="39" fill="#e5b84f"/>
+        <ellipse cx="45" cy="62" rx="7" ry="11" fill="#f5d987" opacity=".8" transform="rotate(-28 45 62)"/>
+        <path d="M47 105c8-17 13-27 25-35" fill="none" stroke="#276044" stroke-width="7" stroke-linecap="round"/>
+        <path d="M48 104c-13-5-22-4-31 1 11 2 19 6 25 12m8-12c-6-13-14-20-24-24 4 12 9 21 19 29m-6-5c-14 0-24 4-32 12 14-2 24-1 35 0m12-4c-5-11-7-20-4-30 6 8 9 18 9 29m-7-2c7-12 16-19 27-22-6 12-13 20-24 27m7-4c10-9 20-12 31-11-10 8-19 13-33 15" fill="#276044"/>
+        <path d="M69 89c0-27 18-47 47-47 25 0 39 16 39 37 0 25-20 42-47 42-18 0-31-11-39-32z" fill="#f5f7f2" stroke="#dce7dc" stroke-width="3"/>
+        <path d="M91 74c13 7 27 6 38 0-4 15-16 23-29 19" fill="#dce7dc"/>
+        <path d="M111 45c-1-12 7-21 17-20 10 1 14 10 12 20" fill="#f5f7f2" stroke="#dce7dc" stroke-width="3"/>
+        <path d="M112 26c-7-13 2-20 10-12 2-12 13-12 14 1 9-7 16 1 8 11" fill="#c94332"/>
+        <path d="m137 47 22 7-22 8-7-7z" fill="#e5b84f"/>
+        <circle cx="121" cy="43" r="3.2" fill="#18372b"/>
+        <path d="M124 101c4 10 10 11 15 3 4-7 0-13-4-17" fill="#c94332"/>
+    </svg>
+    <span class="home-logo-name">Egg &amp; Chicken</span>
+</div>
+<p class="eyebrow">Farm fresh · locally sourced</p>
+<h1>Good food begins with a better farm.</h1>
+<p>Fresh eggs and quality chicken, carefully sourced from trusted local farms and delivered straight to your table.</p>
+<div class="btns"><a class="btn btn-primary" href="pages/products.html">Shop fresh products</a><a class="btn btn-outline" href="pages/products.html?cat=bundles">Explore weekly box</a></div>
+<div class="stats"><div>
+    <b>24h</b><span>Fresh-to-door delivery</span></div><div><b>100%</b><span>Quality checked</span></div><div><b>15+</b><span>Farm partners</span></div></div>
+</div><div class="art"><img src="assets/images/3uzIZOxfYkZuxVvHAWzqiQQ52R4BYagHNC2KhAETj-YT037gKXSsihJ_RMAVchMdogM86qimzYkvpJDk0eoMgzHaGH-t-ii9eXwCjShsSqzpyw7VB8nS9OWkRc-qMNe7jBuLCUOpAZ36RqjU9sqQRvcISsYHppWHMkmJgq_LnYtH3Ny6G0gSP_qMS8gQzjnk.jpg" alt="A basket of fresh eggs among free-ranging hens"><div class="photo-caption"><div><strong>Gathered with care</strong><span>From trusted local farm partners</span></div></div></div></div></section>
+
+<section class="section">
+    <div class="wrap grid g4">
+<div class="card feat">
+    <div class="ico">🌿</div>
+    <h3>Pasture-Raised Daily</h3>
+    <p>Fresh eggs from healthy farms.</p></div>
+<div class="card feat"><div class="ico">✅</div><h3>Strictly Quality Checked</h3><p>Products carefully inspected before delivery.</p></div>
+<div class="card feat"><div class="ico">🚫</div><h3>Zero Hormones Ever</h3><p>Quality products from trusted sources.</p></div>
+<div class="card feat"><div class="ico">❄️</div><h3>Deep Chill Transport</h3><p>Fresh chicken delivered safely.</p></div></div></section>
+
+<section class="section alt"><div class="wrap"><div class="sec-head"><h2>Explore Our Fresh Categories</h2></div><div class="grid g4">
+<article class="card cat hover"><div class="art"><img src="assets/images/ejphTqEcqSzfJGUULFweyeo8ozbXWkwhvV1DZqgoS9eXdjyQRdOfY50UKPrzNqr3DX9UCnaEgDwh2rIfDHq3sAMP0Y-kKq-Z_s6BiNcoRBpKgy0tAB-KmsVScDFeUAujaURbEP54lL2W6xNvMwqFQruVONOMK5o5MKjRBXAxJaCsKIAZeIA2i1cKHuY6GeS2.jpg" alt="Fresh eggs in a woven basket"></div><div class="txt"><h3>Pasture Eggs</h3><p>Fresh, quality eggs from carefully raised hens.</p><a href="pages/products.html?cat=eggs">Shop category →</a></div></article>
+<article class="card cat hover"><div class="art"><img src="assets/images/dQ4lxeApBk_Adllm_0utRh4e9_3IRTjp-j76JdJ0jwj8mrwmTtpvLsq2-lh2UZipwbt0_c05A3Co0sg10S63uPxA-givLyjl8MDMzvSMwvm4k2MDeVst8nX09CXo3sbA9UqA1hHulU_am6PdohDQZEwjke5eaVw1YKnL_s3E1fZa1rUsSsj6Usmbo1coHNfm.jpg" alt="Free-ranging hens on a local farm"></div><div class="txt"><h3>Whole Chicken</h3><p>Fresh whole chicken, prepared and handled with care.</p><a href="pages/products.html?cat=whole">Shop category →</a></div></article>
+<article class="card cat hover"><div class="art"><img src="assets/images/dQ4lxeApBk_Adllm_0utRh4e9_3IRTjp-j76JdJ0jwj8mrwmTtpvLsq2-lh2UZipwbt0_c05A3Co0sg10S63uPxA-givLyjl8MDMzvSMwvm4k2MDeVst8nX09CXo3sbA9UqA1hHulU_am6PdohDQZEwjke5eaVw1YKnL_s3E1fZa1rUsSsj6Usmbo1coHNfm.jpg" alt="Free-ranging hens on a local farm"></div><div class="txt"><h3>Fresh Cuts</h3><p>Convenient chicken cuts ready for your kitchen.</p><a href="pages/products.html?cat=cuts">Shop category →</a></div></article>
+<article class="card cat hover"><div class="art"><img src="assets/images/tq77HwjLAAu834gPgCyBIcyTerd5ywKD7-Hh1qqT7efvr7PxMKaelrvO_YlouFo38JMFGI8_pTsr7HHjTRq191WvInZTtblna4HW209iwE_ewETpBbW9sajM92Bj6FbwsscDRYr13YnRc5T2c2Sqcb8cFAv5bPMWioPQqRXhdgVfIbpMQibwukosDLud78qF.jpg" alt="A basket of eggs ready for the table"></div><div class="txt"><h3>Curated Bundles</h3><p>Farm-fresh combinations for families and kitchens.</p><a href="pages/products.html?cat=bundles">Shop category →</a></div></article></div></div></section>
+
+<section class="section"><div class="wrap"><div class="sec-head"><h2>Best Sellers in Our Co-op</h2><a class="btn btn-outline btn-sm" href="pages/products.html">View All Shop</a></div><div class="grid g4" id="best"></div></div></section>
+
+<section class="section alt"><div class="wrap"><div class="sec-head"><h2>From Nest &amp; Coop to Your Table</h2></div><div class="grid g3">
+<div class="card step"><div class="num">01</div><h3>Customize Your Order</h3><p>Choose from available fresh eggs, chicken, and curated bundles.</p></div>
+<div class="card step"><div class="num">02</div><h3>Gathered Fresh</h3><p>Your order is prepared and checked for freshness.</p></div>
+<div class="card step"><div class="num">03</div><h3>Chilled Farm Delivery</h3><p>Products are safely packed and delivered to your location.</p></div></div></div></section>
+
+<section class="section" id="farm"><div class="wrap split"><div class="art"><img src="assets/images/dQ4lxeApBk_Adllm_0utRh4e9_3IRTjp-j76JdJ0jwj8mrwmTtpvLsq2-lh2UZipwbt0_c05A3Co0sg10S63uPxA-givLyjl8MDMzvSMwvm4k2MDeVst8nX09CXo3sbA9UqA1hHulU_am6PdohDQZEwjke5eaVw1YKnL_s3E1fZa1rUsSsj6Usmbo1coHNfm.jpg" alt="Sunrise over a pasture with free-ranging hens"></div><div>
+<p class="eyebrow">WHY PASTURE-RAISED EGGS MATTER</p><h2>Why Pasture-Raised Truly Matters</h2>
+<p>Hens that roam and forage live better, and it shows in the eggs. Our partner farms follow healthy farming practices, care for their animals, and source responsibly, so you get quality eggs while supporting local farmers.</p>
+<a class="btn btn-primary" href="#">Read Our Farm Story</a></div></div></section>
+
+<section class="section" style="padding-top:0"><div class="wrap"><div class="banner"><div><h2>Never run out of the farm's best.</h2><p>Build your weekly order and keep fresh eggs and chicken ready for every meal.</p><a class="btn btn-gold" href="pages/products.html?cat=bundles">Get started</a></div><div class="art"><img src="assets/images/RiP-MhWHiwIPuQLZQgzkQRaHbieG8aI8ZH9R347FjVe6otbFnSj77lACy5C6BSjnJBJu4lz2gBHuwkn9YxDSPOSa4zeWFRoo7BqepNdHoY320M95maG5uEs05Hk1lRiZ53Yg0PGyDZTS80yPCW4VYit-TJSLUaUTKEVnWl2CYO95wJngdI2se-fmu9KfygDd.jpg" alt="Egg basket prepared for a fresh weekly order"></div></div></div></section>
+
+<section class="section alt" id="recipes"><div class="wrap"><div class="sec-head"><h2>Loved by Kitchens Everywhere</h2></div><div class="grid g3">
+<div class="card testi"><span class="stars">★★★★★</span><p>Always fresh and beautifully packed. The eggs taste noticeably better.</p><b>Mike Suarez</b><br><small>Home cook, Inabanga</small></div>
+<div class="card testi"><span class="stars">★★★★★</span><p>The whole chicken arrives chilled and clean. Our Sunday lunch regular.</p><b>Chef Alberca</b><br><small>Small restaurant owner</small></div>
+<div class="card testi"><span class="stars">★★★★★</span><p>The weekly bundle saves me a trip to the market every week.</p><b>Ralph</b><br><small>Delivery Driver</small></div></div></div></section>
+
+<section class="section"><div class="wrap news"><h2>Fresh updates from the farm.</h2><p style="margin-top:10px">Get product updates, seasonal offers, recipes, and farm news.</p>
+<form id="news" novalidate><label for="ne" class="sr" style="position:absolute;left:-9999px">Email</label><input id="ne" type="email" placeholder="Enter your email" required><button class="btn btn-primary">Subscribe</button></form></div></section>
+</main>
+<div id="footer"></div><div id="toast" role="status" aria-live="polite"></div>
+<script src="js/main.js"></script><script src="js/products.js"></script>
+<script>
+document.addEventListener("shell:ready",initBest);
+$("#news").onsubmit=e=>{e.preventDefault();$("#ne").checkValidity()&&$("#ne").value?(toast("Subscribed. Thanks!"),e.target.reset()):toast("Enter a valid email address")}</script>
+</body>
+</html>

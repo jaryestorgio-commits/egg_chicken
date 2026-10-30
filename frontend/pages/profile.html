@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>My Account | Egg &amp; Chicken</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/auth.css">
+</head>
+<body data-root="../">
+    <div id="navbar"></div>
+    <main id="main">
+        <div class="wrap account-wrap">
+            <header class="account-heading">
+                <p class="eyebrow">Your farm-fresh account</p>
+                <h1>My account</h1>
+                <p>Manage your profile, orders, addresses, and preferences.</p>
+            </header>
+            <div class="account">
+                <details class="account-nav">
+                    <summary>Account menu <span aria-hidden="true">⌄</span></summary>
+                    <nav class="side card" aria-label="Account">
+                        <button class="on" type="button" data-account-view="profile">Profile</button>
+                        <button type="button" data-account-view="orders">My Orders</button>
+                        <button type="button" data-account-view="tracking">Order Tracking</button>
+                        <button type="button" data-account-view="wishlist">Wishlist</button>
+                        <button type="button" data-account-view="addresses">Addresses</button>
+                        <button type="button" data-account-view="settings">Settings</button>
+                        <button type="button" id="logout">Logout</button>
+                    </nav>
+                </details>
+                <div class="account-content">
+                    <section class="account-view" data-view="profile" aria-labelledby="account-name">
+                        <div class="card account-panel">
+                            <div class="account-user">
+                                <div class="account-avatar" aria-hidden="true">EC</div>
+                                <div>
+                                    <p class="eyebrow">Welcome back</p>
+                                    <h2 id="account-name">Loading your account…</h2>
+                                    <p id="account-email"></p>
+                                </div>
+                            </div>
+                            <form id="profile-form" class="account-form" novalidate>
+                                <div class="account-section-title">
+                                    <div><h3>Profile information</h3><p>Keep your contact details up to date.</p></div>
+                                </div>
+                                <div class="account-fields">
+                                    <div><label for="profile-name">Full name</label><input id="profile-name" name="name" required maxlength="120" autocomplete="name"></div>
+                                    <div><label for="profile-email">Email address</label><input id="profile-email" name="email" type="email" required maxlength="120" autocomplete="email"></div>
+                                </div>
+                                <p class="account-message error" id="profile-error" role="alert"></p>
+                                <div class="account-form-actions">
+                                    <button class="btn btn-primary" type="submit">Save changes</button>
+                                    <span class="account-message" id="profile-status" role="status" aria-live="polite"></span>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="account-section-title account-orders-title">
+                            <div><p class="eyebrow">Your latest activity</p><h2>Recent orders</h2></div>
+                            <button class="btn btn-outline btn-sm" type="button" data-account-view="orders">View all orders</button>
+                        </div>
+                        <div id="recent-orders" class="account-order-list" aria-live="polite">
+                            <div class="account-loading" role="status">Loading your recent orders…</div>
+                        </div>
+                    </section>
+                    <section class="account-view" data-view="orders" aria-labelledby="orders-title" hidden>
+                        <div class="account-section-title"><div><p class="eyebrow">Order history</p><h2 id="orders-title">My orders</h2></div></div>
+                        <div id="all-orders" class="account-order-list" aria-live="polite"></div>
+                    </section>
+                    <section class="account-view" data-view="tracking" aria-labelledby="tracking-title" hidden>
+                        <div class="account-section-title"><div><p class="eyebrow">Stay in the loop</p><h2 id="tracking-title">Order tracking</h2><p>Select an order to see its latest status and delivery details.</p></div></div>
+                        <div id="tracking-orders" class="account-order-list" aria-live="polite"></div>
+                    </section>
+                    <section class="account-view" data-view="wishlist" aria-labelledby="wishlist-title" hidden>
+                        <div class="account-section-title"><div><p class="eyebrow">Saved for later</p><h2 id="wishlist-title">Your wishlist</h2><p>Products you have saved while browsing the shop.</p></div></div>
+                        <div id="wishlist-items" class="grid g3" aria-live="polite"></div>
+                    </section>
+                    <section class="account-view" data-view="addresses" aria-labelledby="addresses-title" hidden>
+                        <div class="account-section-title"><div><p class="eyebrow">Faster checkout</p><h2 id="addresses-title">Your addresses</h2><p>Manage the delivery addresses saved to your account.</p></div></div>
+                        <div id="addresses-list" class="address-list" aria-live="polite"></div>
+                        <div class="card account-panel address-form-panel">
+                            <h3>Add a new address</h3>
+                            <form id="address-form" class="account-form" novalidate>
+                                <div class="account-fields">
+                                    <div><label for="address-name">Full name</label><input id="address-name" name="full_name" required maxlength="150" autocomplete="name"></div>
+                                    <div><label for="address-phone">Phone number</label><input id="address-phone" name="phone" required maxlength="40" autocomplete="tel"></div>
+                                    <div class="field-wide"><label for="address-line">Street address</label><input id="address-line" name="address_line" required maxlength="300" autocomplete="street-address"></div>
+                                    <div><label for="address-city">City</label><input id="address-city" name="city" required maxlength="120" autocomplete="address-level2"></div>
+                                    <div><label for="address-province">Province</label><input id="address-province" name="province" required maxlength="120" autocomplete="address-level1"></div>
+                                    <div><label for="address-postal">Postal code</label><input id="address-postal" name="postal_code" required maxlength="20" autocomplete="postal-code"></div>
+                                </div>
+                                <label class="account-check"><input type="checkbox" name="is_default" value="true"> Set as my default address</label>
+                                <p class="account-message error" id="address-error" role="alert"></p>
+                                <button class="btn btn-primary" type="submit">Add address</button>
+                            </form>
+                        </div>
+                    </section>
+                    <section class="account-view" data-view="settings" aria-labelledby="settings-title" hidden>
+                        <div class="account-section-title"><div><p class="eyebrow">Account security</p><h2 id="settings-title">Settings</h2><p>Update the password used to sign in to your account.</p></div></div>
+                        <div class="card account-panel settings-panel">
+                            <form id="password-form" class="account-form" novalidate>
+                                <div><label for="current-password">Current password</label><input id="current-password" name="current_password" type="password" required autocomplete="current-password"></div>
+                                <div><label for="new-password">New password</label><input id="new-password" name="new_password" type="password" required minlength="8" autocomplete="new-password"><small>Use at least 8 characters.</small></div>
+                                <div><label for="confirm-password">Confirm new password</label><input id="confirm-password" name="confirm_password" type="password" required minlength="8" autocomplete="new-password"></div>
+                                <p class="account-message error" id="password-error" role="alert"></p>
+                                <div class="account-form-actions"><button class="btn btn-primary" type="submit">Update password</button><span class="account-message" id="password-status" role="status" aria-live="polite"></span></div>
+                            </form>
+                        </div>
+                    </section>
+                    <div id="account-error" class="account-load-error" role="alert" hidden></div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <div id="footer"></div>
+    <div id="toast" role="status" aria-live="polite"></div>
+    <script src="../js/main.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>document.addEventListener("shell:ready",initProfile)</script>
+</body>
+</html>

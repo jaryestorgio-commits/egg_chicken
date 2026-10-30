@@ -1,0 +1,19 @@
+#form.layout{grid-template-columns:minmax(0,1.55fr) minmax(280px,.8fr);gap:24px}
+#form.layout>div.card,#form.layout>aside.card{padding:24px;border:1px solid #e4eae2;box-shadow:none}
+#form.layout h3{font-size:1.08rem}
+#form.layout label:not(.opt){font-size:.88rem;color:#33483a}
+#form.layout .fgrid{gap:0 14px}
+#form.layout .opt{min-height:52px;margin-top:8px;border:1px solid #dce5da;border-radius:6px;font-size:.92rem}
+#form.layout .opt:has(input:checked){border-color:#557e54;background:#f4f8f2}
+#form.layout .opt input{accent-color:var(--red)}
+#items{display:grid!important;gap:8px;padding:12px 0 18px;border-bottom:1px solid #e4eae2}
+#items>div{display:flex;justify-content:space-between;gap:14px;color:#526156;font-size:.9rem}
+#form.layout .sum>div:not(#items){display:flex;justify-content:space-between;gap:12px;padding:7px 0}
+#form.layout .sum .total{margin-top:8px;padding-top:14px;border-top:1px solid #dce5da;font:700 1.12rem Manrope,sans-serif}
+#form.layout .sum .error:empty{display:none}
+#form.layout #place{min-height:50px}
+@media(max-width:960px){#form.layout{grid-template-columns:1fr}}
+@media(max-width:600px){
+	#form.layout>div.card,#form.layout>aside.card{padding:18px}
+	#form.layout .fgrid{grid-template-columns:1fr}
+}

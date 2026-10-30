@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<title>Orders | Egg &amp; Chicken Admin</title>
+	<link rel="stylesheet" href="../css/style.css">
+	<link rel="stylesheet" href="../css/admin.css">
+</head>
+<body data-admin-page="orders">
+	<div class="admin-shell">
+		<aside class="admin-sidebar" id="admin-sidebar"><a class="admin-brand" href="dashboard.html"><span class="admin-brand-mark" aria-hidden="true">E</span><span>Egg &amp; Chicken<small>Store administration</small></span></a><nav class="admin-nav" aria-label="Admin navigation"><a href="dashboard.html">Overview</a><a href="products.html">Products</a><a href="inventory.html">Inventory</a><a class="active" aria-current="page" href="orders.html">Orders</a><a href="customers.html">Customers</a><a href="reports.html">Reports &amp; analytics</a><a href="messages.html">Messages &amp; support</a></nav><div class="admin-sidebar-footer"><a href="account.html">Settings</a><button class="admin-logout" type="button" data-admin-logout>Sign out</button><a class="store-link" href="../index.html">View storefront</a></div></aside>
+		<button class="admin-drawer-backdrop" type="button" aria-label="Close navigation" data-admin-menu-close></button>
+		<main class="admin-main">
+			<header class="admin-topbar"><div class="admin-heading"><button class="admin-menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="admin-sidebar" data-admin-menu-toggle>☰</button><div><p class="eyebrow">Fulfillment</p><h1>Orders</h1><p class="admin-subtitle">Review, track, and manage customer orders.</p></div></div><div class="admin-actions"><span class="admin-greeting" data-admin-greeting></span><button class="btn btn-outline btn-sm" id="admin-refresh" type="button">Refresh</button></div></header>
+			<div class="admin-alert" id="admin-error" role="alert" hidden></div><div class="admin-toast" id="admin-toast" role="status" aria-live="polite"></div>
+			<section class="admin-panel"><div class="admin-toolbar"><input id="order-search" type="search" placeholder="Search order, customer, or email" aria-label="Search orders"><select id="order-filter" aria-label="Filter by order status"><option value="all">All statuses</option><option>pending</option><option>confirmed</option><option>processing</option><option>shipped</option><option>delivered</option><option>cancelled</option></select></div><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Order</th><th>Customer</th><th>Date</th><th>Items</th><th>Total</th><th>Payment</th><th>Status</th><th>Update</th></tr></thead><tbody id="order-rows"><tr><td colspan="8" class="admin-empty">Loading orders…</td></tr></tbody></table></div><nav class="admin-pagination" id="order-pagination" aria-label="Order pages"></nav></section>
+		</main>
+	</div>
+	<dialog class="admin-dialog admin-detail-dialog" id="order-dialog"><div class="admin-dialog-content"><button type="button" class="admin-dialog-close" aria-label="Close order details" data-dialog-close>×</button><div id="order-detail-content"></div></div></dialog>
+	<script src="../js/admin.js"></script>
+</body>
+</html>
