@@ -337,7 +337,7 @@ async function initOrder(){
   let o;try{o=await api.getOrder(id)}catch(error){meta.innerHTML=`<div class="empty"><h3>Couldn't load this order</h3><p>${error.message}</p></div>`;return}
   if(!o){meta.innerHTML='<div class="empty"><p>Order not found.</p></div>';return}
   let verificationMessage='';
-  const onlinePayment=(o.payments||[]).find(payment=>payment.payment_method==='online_payment'&&['pending','failed'].includes(payment.payment_status));
+  const onlinePayment=(o.payments||[]).find(payment=>['online_payment','gcash','card'].includes(payment.payment_method)&&['pending','failed'].includes(payment.payment_status));
   if(onlinePayment){
     try{
       await api.getPayment(onlinePayment.id);
@@ -346,7 +346,7 @@ async function initOrder(){
       verificationMessage=`Payment status could not be refreshed: ${accountEscape(error.message)}. The order remains pending until Xendit verification completes.`;
     }
   }
-  const pendingOnlinePayment=(o.payments||[]).find(payment=>payment.payment_method==='online_payment'&&['pending','failed'].includes(payment.payment_status));
+  const pendingOnlinePayment=(o.payments||[]).find(payment=>['online_payment','gcash','card'].includes(payment.payment_method)&&['pending','failed'].includes(payment.payment_status));
   const canCancel=o.status==='pending'&&!(o.payments||[]).some(payment=>payment.payment_status==='paid');
   const steps=['Order Placed','Order Confirmed','Preparing','Out for Delivery','Delivered'];
   $('#tl').innerHTML=steps.map((s,i)=>`<li class="${i<o.statusStep?'done':i===o.statusStep?'now':''}"><i></i><b>${s}</b></li>`).join('');

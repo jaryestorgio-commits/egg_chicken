@@ -112,7 +112,8 @@ label{display:block;font-weight:700;font-size:.92rem;margin:14px 0 6px}
 .nav-actions .icon-btn:hover{color:var(--red)}
 body[data-root=""] #navbar .nav-actions > a.btn,
 body[data-root="../"]:has(#chips) #navbar .nav-actions > a.btn,
-body[data-root="../"]:has(.login-main) #navbar .nav-actions > a.btn{
+body[data-root="../"]:has(.login-main) #navbar .nav-actions > a.btn,
+body[data-root="../"]:has(.register-main) #navbar .nav-actions > a.btn{
 	min-height:0;
 	padding:8px 6px;
 	border:0;
@@ -125,7 +126,8 @@ body[data-root="../"]:has(.login-main) #navbar .nav-actions > a.btn{
 }
 body[data-root=""] #navbar .nav-actions > a.btn:hover,
 body[data-root="../"]:has(#chips) #navbar .nav-actions > a.btn:hover,
-body[data-root="../"]:has(.login-main) #navbar .nav-actions > a.btn:hover{color:var(--red)}
+body[data-root="../"]:has(.login-main) #navbar .nav-actions > a.btn:hover,
+body[data-root="../"]:has(.register-main) #navbar .nav-actions > a.btn:hover{color:var(--red)}
 .badge{top:-3px;right:-8px}
 .hero{padding:72px 0 78px;background:#f7f8f4}
 .hero .wrap{grid-template-columns:1fr .95fr;gap:72px}

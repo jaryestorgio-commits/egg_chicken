@@ -143,7 +143,11 @@ const api = {
   checkout: async data => {
     const shipping_address = [data.name, data.phone, data.address, data.barangay, data.city, data.province, data.zip]
       .filter(Boolean).join(', ');
-    const payment_method = data.payment === 'cod' ? 'cash_on_delivery' : 'online_payment';
+    const payment_method = ({
+      cod: 'cash_on_delivery',
+      gcash: 'gcash',
+      card: 'card'
+    })[data.payment] || 'cash_on_delivery';
     const result = await request('POST', '/orders', {
       shipping_address,
       delivery_option: data.delivery || 'standard',
@@ -152,7 +156,7 @@ const api = {
     const order = normalizeOrder(result.order);
     order.payment = result.payment;
     order.checkout_url = result.checkout_url || result.payment?.checkout_url || '';
-    if (payment_method === 'online_payment' && !order.checkout_url) {
+    if (payment_method !== 'cash_on_delivery' && !order.checkout_url) {
       throw new ApiError('Xendit did not return a hosted invoice URL. Contact support before retrying this order.', 502);
     }
     return order;

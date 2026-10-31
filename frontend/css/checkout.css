@@ -6,6 +6,25 @@
 #form.layout .opt{min-height:52px;margin-top:8px;border:1px solid #dce5da;border-radius:6px;font-size:.92rem}
 #form.layout .opt:has(input:checked){border-color:#557e54;background:#f4f8f2}
 #form.layout .opt input{accent-color:var(--red)}
+.payment-hint{margin:-8px 0 14px;color:#66756a;font-size:.9rem}
+.payment-options{display:grid;gap:10px}
+.payment-card{position:relative;display:flex;align-items:center;gap:14px;min-height:82px;margin:0;padding:14px 16px;border:1px solid #dce5da;border-radius:10px;background:#fff;cursor:pointer;transition:border-color .18s ease,background .18s ease,box-shadow .18s ease}
+.payment-card:hover{border-color:#9bb39a}
+.payment-card:has(input:checked){border-color:#557e54;background:#f4f8f2;box-shadow:0 0 0 1px #557e54}
+.payment-card input{position:absolute;width:1px;height:1px;opacity:0}
+.payment-card:focus-within{outline:2px solid #557e54;outline-offset:2px}
+.payment-icon{display:grid;place-items:center;flex:0 0 44px;width:44px;height:44px;border-radius:10px;font-size:1.35rem;font-weight:800}
+.payment-icon-cod{background:#edf4e9;color:#456a43}
+.payment-icon-gcash{background:#e8f4ff;color:#0874ce}
+.payment-icon-card{background:#f2efff;color:#6854a5}
+.payment-icon-card svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8}
+.payment-copy{display:grid;gap:4px;flex:1}
+.payment-copy strong{color:#26372b;font-size:.94rem}
+.payment-copy small{color:#68776c;font-size:.82rem;font-weight:400}
+.payment-copy strong .payment-via{display:inline;color:#68776c;font-size:.76rem}
+.payment-radio{display:grid;place-items:center;flex:0 0 20px;width:20px;height:20px;border:2px solid #b7c3b6;border-radius:50%}
+.payment-card:has(input:checked) .payment-radio{border-color:#557e54}
+.payment-card:has(input:checked) .payment-radio:after{width:10px;height:10px;border-radius:50%;background:#557e54;content:""}
 #items{display:grid!important;gap:8px;padding:12px 0 18px;border-bottom:1px solid #e4eae2}
 #items>div{display:flex;justify-content:space-between;gap:14px;color:#526156;font-size:.9rem}
 #form.layout .sum>div:not(#items){display:flex;justify-content:space-between;gap:12px;padding:7px 0}
@@ -16,4 +35,6 @@
 @media(max-width:600px){
 	#form.layout>div.card,#form.layout>aside.card{padding:18px}
 	#form.layout .fgrid{grid-template-columns:1fr}
+	.payment-card{gap:11px;padding:12px}
+	.payment-icon{flex-basis:40px;width:40px;height:40px}
 }
