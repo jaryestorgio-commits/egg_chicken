@@ -4,6 +4,7 @@ const TOKEN_KEY = 'ec_access_token';
 const WISHLIST_KEY = 'ec_wishlist';
 const getAuthToken = () => localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
 const clearAuthToken = () => { localStorage.removeItem(TOKEN_KEY); sessionStorage.removeItem(TOKEN_KEY); };
+let customerAuthUser = null;
 const saveAuthToken = (token, remember = true) => {
   clearAuthToken();
   (remember ? localStorage : sessionStorage).setItem(TOKEN_KEY, token);
@@ -50,6 +51,7 @@ const request = async (method, path, body) => {
   if (!response.ok || payload.success === false) {
     if (response.status === 401 && token) {
       clearAuthToken();
+      setCustomerAuthUser(null);
       const page = location.pathname.toLowerCase();
       if (!page.endsWith('/login.html') && !page.endsWith('/register.html')) {
         const login = `${ROOT}pages/login.html?next=${encodeURIComponent(location.href)}`;
@@ -180,15 +182,20 @@ const api = {
   login: async data => {
     const result = await request('POST', '/auth/login', data);
     saveAuthToken(result.access_token);
+    setCustomerAuthUser(result.user);
     return result.user;
   },
   register: async data => {
     const result = await request('POST', '/auth/register', data);
     saveAuthToken(result.access_token);
+    setCustomerAuthUser(result.user);
     return result.user;
   },
   logout: async () => {
-    try { await request('POST', '/auth/logout'); }
+    const logoutRequest = request('POST', '/auth/logout');
+    clearAuthToken();
+    setCustomerAuthUser(null);
+    try { await logoutRequest; }
     finally { clearAuthToken(); }
   },
   getProfile: async () => {
@@ -232,22 +239,32 @@ async function updateBadge(){
 function configureMobileNavigation(){
   const path=location.pathname.toLowerCase();
   const page=path.split('/').pop();
+  const nav=$('.mobile-bottom-nav');
+  const isPublicAuthPage=page==='login.html'||page==='register.html';
+  const showNavigation=customerAuthUser?.role==='customer'&&!isPublicAuthPage;
+  if(nav)nav.hidden=!showNavigation;
+  document.body.classList.toggle('has-mobile-bottom-nav',showNavigation);
+  if(!showNavigation)return;
   const active=page==='index.html'||!page?'home'
     :page==='products.html'||page==='product-details.html'?'shop'
     :page==='cart.html'||page==='checkout.html'?'cart'
     :page==='orders.html'||page==='order-details.html'?'orders'
-    :page==='profile.html'||page==='login.html'||page==='register.html'?'profile':'';
+    :page==='profile.html'?'profile':'';
   const profile=$('[data-mobile-nav="profile"]');
-  if(getAuthToken()&&profile)profile.href=`${ROOT}pages/profile.html`;
+  if(profile)profile.href=`${ROOT}pages/profile.html`;
   if(active){
     const activeLink=$(`[data-mobile-nav="${active}"]`);
     activeLink?.classList.add('active');
     activeLink?.setAttribute('aria-current','page');
   }
-  document.body.classList.add('has-mobile-bottom-nav');
+}
+function setCustomerAuthUser(user){
+  customerAuthUser=user?.role==='customer'?user:null;
+  configureNavbarAuthentication();
+  configureMobileNavigation();
 }
 function configureNavbarAuthentication(){
-  const authenticated=Boolean(getAuthToken());
+  const authenticated=customerAuthUser?.role==='customer';
   document.querySelectorAll('#navbar .nav-auth').forEach(link=>{
     link.textContent=authenticated?'Logout':'Log In';
     link.href=authenticated?'#':`${ROOT}pages/login.html`;
@@ -269,10 +286,38 @@ function configureNavbarAuthentication(){
   }
 }
 function requireAuth(){
-  if(getAuthToken())return true;
+  if(customerAuthUser?.role==='customer')return true;
   location.href=`${ROOT}pages/login.html?next=${encodeURIComponent(location.href)}`;
   return false;
 }
+async function initializeCustomerAuth(){
+  if(getAuthToken()){
+    try{
+      setCustomerAuthUser(await api.getProfile());
+    }catch(error){
+      setCustomerAuthUser(null);
+      if(error.status!==401)console.error('Customer authentication could not be verified',error);
+    }
+  }else{
+    setCustomerAuthUser(null);
+  }
+  const page=location.pathname.toLowerCase().split('/').pop();
+  const protectedPages=new Set(['cart.html','checkout.html','orders.html','order-details.html','profile.html']);
+  if(protectedPages.has(page)&&customerAuthUser?.role!=='customer'){
+    location.replace(`${ROOT}pages/login.html?next=${encodeURIComponent(location.href)}`);
+    return false;
+  }
+  return true;
+}
+window.addEventListener('storage',event=>{
+  if(event.key!==TOKEN_KEY&&event.key!==null)return;
+  setCustomerAuthUser(null);
+  if(getAuthToken()){
+    api.getProfile()
+      .then(setCustomerAuthUser)
+      .catch(error=>console.error('Customer authentication could not be refreshed',error));
+  }
+});
 
 let cardTpl;
 async function initializeCustomerChat() {
@@ -364,4 +409,4 @@ document.addEventListener('click', async e => {
   if(e.target.closest('#burger')){ const m=$('#menu'), o=m.classList.toggle('open'); $('#burger').setAttribute('aria-expanded',String(o));$('#burger').setAttribute('aria-label',o?'Close navigation menu':'Open navigation menu'); }
   if(e.target.closest('#menu a')){const m=$('#menu');m.classList.remove('open');$('#burger')?.setAttribute('aria-expanded','false');$('#burger')?.setAttribute('aria-label','Open navigation menu')}
 });
-(async()=>{ try{$('#navbar').innerHTML=await partial('navbar');$('#footer').innerHTML=await partial('footer');const nav=$('#navbar .nav');const updateNav=()=>nav?.classList.toggle('is-scrolled',window.scrollY>4);window.addEventListener('scroll',updateNav,{passive:true});updateNav();configureNavbarAuthentication();configureMobileNavigation();document.dispatchEvent(new Event('shell:ready'));updateBadge().catch(error=>console.error('Cart quantity could not be refreshed',error));initializeCustomerChat().catch(error=>console.error('Customer support chat could not be initialized',error))}catch(error){console.error('Page shell failed to load',error)} })();
+(async()=>{ try{$('#navbar').innerHTML=await partial('navbar');$('#footer').innerHTML=await partial('footer');if(!await initializeCustomerAuth())return;const nav=$('#navbar .nav');const updateNav=()=>nav?.classList.toggle('is-scrolled',window.scrollY>4);window.addEventListener('scroll',updateNav,{passive:true});updateNav();configureNavbarAuthentication();configureMobileNavigation();document.dispatchEvent(new Event('shell:ready'));updateBadge().catch(error=>console.error('Cart quantity could not be refreshed',error));initializeCustomerChat().catch(error=>console.error('Customer support chat could not be initialized',error))}catch(error){console.error('Page shell failed to load',error)} })();
