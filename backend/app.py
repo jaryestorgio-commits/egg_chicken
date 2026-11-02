@@ -7,6 +7,7 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from config import Config
 from extensions import db, migrate
+import models
 
 
 class JSONCompatibleHTMLResponse(Response):
@@ -39,7 +40,7 @@ def create_app(test_config=None):
         app.config.update(test_config)
 
     db.init_app(app)
-    migrate.init_app(app, db)
+    migrate.init_app(app, db, compare_type=True)
     jwt = JWTManager(app)
     CORS(app, resources={r"/api/*": {"origins": app.config["CORS_ORIGINS"]}})
 

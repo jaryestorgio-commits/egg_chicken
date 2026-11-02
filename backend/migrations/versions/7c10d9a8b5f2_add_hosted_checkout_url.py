@@ -16,7 +16,11 @@ depends_on = None
 
 
 def upgrade():
-    op.add_column("payments", sa.Column("checkout_url", sa.String(length=512), nullable=True))
+    inspector = sa.inspect(op.get_bind())
+    if inspector.has_table("payments"):
+        columns = {column["name"] for column in inspector.get_columns("payments")}
+        if "checkout_url" not in columns:
+            op.add_column("payments", sa.Column("checkout_url", sa.String(length=512), nullable=True))
 
 
 def downgrade():

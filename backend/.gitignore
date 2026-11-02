@@ -1,0 +1,6 @@
+*
+!migrations/
+migrations/*
+!migrations/versions/
+migrations/versions/*
+!migrations/versions/*.py

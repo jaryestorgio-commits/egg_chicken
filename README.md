@@ -24,7 +24,7 @@ The site is designed to connect customers with fresh products from trusted local
 1. Create a PostgreSQL database for the application, such as `egg_chicken_db`.
 2. Create and activate a virtual environment, then install the backend dependencies:
 
-   ```powershell
+   ```sh
    cd backend
    py -m venv .venv
    .\.venv\Scripts\Activate.ps1
@@ -34,7 +34,7 @@ The site is designed to connect customers with fresh products from trusted local
 3. Create `backend/.env` and set the variables described below. Keep this file private and out of version control.
 4. Apply the database migrations:
 
-   ```powershell
+   ```sh
    python -m flask --app app db upgrade
    ```
 
@@ -110,6 +110,22 @@ Online checkout requires all four Xendit variables above. If Xendit is not confi
 The versioned API is under `/api/v1`. Main route groups include authentication, products, categories, cart, orders, payments, users, inventory, admin, and customer support chat.
 
 Database schema changes are managed with Flask-Migrate/Alembic in `backend/migrations`. After configuring the database, use `python -m flask --app app db upgrade` to apply the checked-in migrations.
+
+The initial schema migration creates all registered model tables without replacing existing tables. The forward repair migration also creates tables missing from databases already at the previous revision; it does not drop tables or account data. In the Render service shell, with the backend service's production `DATABASE_URL` configured, run:
+
+```powershell
+# Omit this if the Render service's Root Directory is already `backend`.
+cd backend
+python -m flask --app app db current
+python -m flask --app app db heads
+python -m flask --app app db upgrade
+```
+
+Verify the required tables against that same configured database:
+
+```sh
+python -c 'from sqlalchemy import inspect; from extensions import db; required = {"users", "categories", "products", "carts", "cart_items", "orders", "order_items", "payments", "addresses", "inventory", "audit_logs", "token_blocklist", "chat_messages", "admin_notifications", "admin_notification_reads"}; present = set(inspect(db.engine).get_table_names()); missing = sorted(required - present); print("Missing tables:", missing); raise SystemExit(bool(missing))'
+```
 
 ## Tests
 
