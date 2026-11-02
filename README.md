@@ -55,6 +55,18 @@ The site is designed to connect customers with fresh products from trusted local
 
 The frontend can also be served separately with a local static server. The default CORS configuration allows common local origins on ports `5500` and `8000`.
 
+## Render deployment
+
+The deployed frontend and API share the `https://egg-chicken.onrender.com` origin. Frontend API requests use that origin's `/api/v1` path in production; local development keeps using `http://127.0.0.1:5000/api/v1`. `window.EC_API_BASE_URL` can override either default when needed.
+
+Set these backend environment variables in Render:
+
+- `SECRET_KEY` and `JWT_SECRET_KEY`: separate, strong, private values.
+- `DATABASE_URL`: the connection URL for the existing PostgreSQL database. The application accepts Render's `postgres://` and `postgresql://` URL schemes and configures the installed Psycopg 3 driver.
+- `CORS_ORIGINS`: include `https://egg-chicken.onrender.com`. Add any separately hosted frontend origins explicitly; use comma-separated origins without trailing slashes.
+
+Run the existing database migrations during deployment when needed. The health endpoint confirms the API process is running but does not check PostgreSQL; verify database access with `/api/v1/products?limit=1` and inspect Render logs if it returns an error.
+
 ## Environment configuration
 
 Set these variables in `backend/.env`:

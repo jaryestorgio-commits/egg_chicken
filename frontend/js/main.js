@@ -1,5 +1,9 @@
 const ROOT = document.body.dataset.root || '';
-const API_BASE = window.EC_API_BASE_URL || 'http://127.0.0.1:5000/api/v1';
+const API_BASE = (window.EC_API_BASE_URL || (
+  ['localhost', '127.0.0.1'].includes(location.hostname)
+    ? 'http://127.0.0.1:5000/api/v1'
+    : `${location.origin}/api/v1`
+)).replace(/\/+$/, '');
 const TOKEN_KEY = 'ec_access_token';
 const WISHLIST_KEY = 'ec_wishlist';
 const getAuthToken = () => localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
@@ -44,8 +48,9 @@ const request = async (method, path, body) => {
     response = await fetch(`${API_BASE}${path}`, {
       method, headers, body: body === undefined ? undefined : JSON.stringify(body)
     });
-  } catch {
-    throw new ApiError('Could not reach the store. Check that the API is running and try again.', 0);
+  } catch (error) {
+    const reason = error instanceof Error ? ` ${error.message}` : '';
+    throw new ApiError(`Could not connect to the store API at ${API_BASE}. Check the API URL, backend availability, and CORS configuration.${reason}`, 0);
   }
   const payload = await response.json().catch(() => ({}));
   if (!response.ok || payload.success === false) {

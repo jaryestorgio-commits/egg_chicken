@@ -1,4 +1,8 @@
-const ADMIN_API_BASE = window.EC_API_BASE_URL || 'http://127.0.0.1:5000/api/v1';
+const ADMIN_API_BASE = (window.EC_API_BASE_URL || (
+	['localhost', '127.0.0.1'].includes(location.hostname)
+		? 'http://127.0.0.1:5000/api/v1'
+		: `${location.origin}/api/v1`
+)).replace(/\/+$/, '');
 const ADMIN_TOKEN_KEY = 'ec_access_token';
 const ORDER_STATUSES = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'];
 const LOW_STOCK_LIMIT = 10;
@@ -183,8 +187,9 @@ async function adminRequest(path, method = 'GET', body) {
 			headers,
 			body: body === undefined ? undefined : JSON.stringify(body)
 		});
-	} catch {
-		throw new Error('Could not reach the store API. Check that the backend is running.');
+	} catch (error) {
+		const reason = error instanceof Error ? ` ${error.message}` : '';
+		throw new Error(`Could not connect to the store API at ${ADMIN_API_BASE}. Check the API URL, backend availability, and CORS configuration.${reason}`);
 	}
 	const payload = await response.json().catch(() => ({}));
 	if (!response.ok || payload.success === false) {

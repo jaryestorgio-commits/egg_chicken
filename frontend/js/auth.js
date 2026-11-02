@@ -46,7 +46,7 @@ function bindAuth(kind){
       toast('Welcome to Egg & Chicken');
       if(success){success.textContent='Signed in successfully. Redirecting…';success.hidden=false}
       setTimeout(()=>{location.href=destination},700);
-    }catch(x){err.textContent=x.message}
+    }catch(x){err.textContent=accountErrorMessage(x)}
     finally{button.disabled=false;button.innerHTML=buttonLabel}
   };
 }
