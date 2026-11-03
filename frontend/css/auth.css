@@ -49,8 +49,8 @@
 .login-message:not(:empty){padding:11px 13px;border:1px solid #ebcbc5;border-radius:9px;background:#fff5f2;color:#9a3327}
 .login-message.error:empty{display:none}
 .login-success:not(:empty){margin-top:12px;padding:11px 13px;border:1px solid #cfe1ce;border-radius:9px;background:#f1f8ef;color:#276044;font-size:.86rem}
-.login-submit{position:relative;display:flex;width:100%;min-height:52px;justify-content:center;margin-top:18px;padding:0 19px;border-radius:10px;background:#276044;box-shadow:0 7px 16px rgba(39,96,68,.18);transition:background-color .18s,transform .18s,box-shadow .18s}
-.login-submit span{position:absolute;right:19px}
+.login-submit{display:flex;width:100%;min-height:52px;align-items:center;justify-content:center;gap:8px;margin-top:18px;padding:0 19px;border-radius:10px;background:#276044;box-shadow:0 7px 16px rgba(39,96,68,.18);transition:background-color .18s,transform .18s,box-shadow .18s}
+.login-submit span{position:static}
 .login-submit:hover{transform:translateY(-1px);background:#18372b;box-shadow:0 10px 20px rgba(24,55,43,.2)}
 .login-submit:active{transform:translateY(0)}
 .login-submit:disabled{opacity:.68;cursor:wait;transform:none}

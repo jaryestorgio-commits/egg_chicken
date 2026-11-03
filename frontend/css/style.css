@@ -164,6 +164,7 @@ body[data-root="../"]:has(.register-main) #navbar .nav-actions > a.btn:hover{col
 input,select,textarea{border:1px solid #cbd6ca;border-radius:6px}
 input:focus,select:focus{border-color:var(--red)}
 .footer{background:#18372b}
+.footer .logo{gap:12px}
 .footer h4{color:#e5b84f}
 .page-title{padding-top:48px}
 .pcard .art{background:#edf2eb}

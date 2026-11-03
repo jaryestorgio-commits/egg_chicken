@@ -15,21 +15,22 @@ const saveAuthToken = (token, remember = true) => {
 };
 const productImageFiles = {
   'free-range brown eggs (6-pack)': '842eab39-e19c-4b8e-9d00-653d7390d64e.jpg',
-  'large white eggs (12-pack)': '413fc266-a996-4364-ae41-945ee649f82f.jpg',
-  'farm-fresh brown eggs (12-pack)': '674a8180-defe-44c6-aec6-30eb9ecd498d.jpg',
-  'organic duck eggs (6-pack)': 'oPeUTlCPxYHN8EEh3xkEY4uOtFkzmhQHGSehiYfifvChLdSFSgKUKI1GBPWSCzsqGCxMLGimD1yOLbRnT9moKwKXRf0qpzuzJcML7cct2ALKTMgXMk14rNUOwSCJHSVrbu8-do4Z5S3ctJ9S0yT4AkAeMib4JkDehemIL4nUfgTbAn1OGh1x7DutHNzPjxDD.jpg',
+  'large white eggs (12-pack)': 'whitelarge egg.jpg',
+  'farm-fresh brown eggs (12-pack)': 'tq77HwjLAAu834gPgCyBIcyTerd5ywKD7-Hh1qqT7efvr7PxMKaelrvO_YlouFo38JMFGI8_pTsr7HHjTRq191WvInZTtblna4HW209iwE_ewETpBbW9sajM92Bj6FbwsscDRYr13YnRc5T2c2Sqcb8cFAv5bPMWioPQqRXhdgVfIbpMQibwukosDLud78qF.jpg',
+  'organic duck eggs (6-pack)': 'duck eggs.jpg',
   'whole native chicken (1 kg)': 'b019f5a0-d29e-44ab-8905-12a1ad787e31.jpg',
   'whole broiler chicken (1.2 kg)': '30142feb-1c76-48e6-81ab-838b28002d1a.jpg',
   'free-range whole chicken (1.5 kg)': 'e3e0c3a8-10a4-466b-8dff-a4ba26d4d6ff.jpg',
   'frozen whole chicken (1 kg)': '158f3fdd-5b84-4d4a-99c1-0e8a1e27c3b2.jpg',
-  'chicken breast fillet (500 g)': 'a02bbb37-09eb-4f2a-a94b-c8b530f789cf.jpg',
+  'chicken breast fillet (500 g)': 'chicken breast.jpg',
   'chicken thighs (500 g)': '1e69904f-65d6-4cfa-adef-04919bebc6aa.jpg',
   'chicken wings (500 g)': '201b8b8f-26e4-44e5-99fa-47024a3cd9ea.jpg',
   'chicken drumsticks (500 g)': 'c771b862-f35d-40c6-b2c6-613788e90b54.jpg',
   'chicken leg quarters (500 g)': 'b3e6ab6d-7256-49f5-a260-39e918b7d6f7.jpg',
   eggs: 'ejphTqEcqSzfJGUULFweyeo8ozbXWkwhvV1DZqgoS9eXdjyQRdOfY50UKPrzNqr3DX9UCnaEgDwh2rIfDHq3sAMP0Y-kKq-Z_s6BiNcoRBpKgy0tAB-KmsVScDFeUAujaURbEP54lL2W6xNvMwqFQruVONOMK5o5MKjRBXAxJaCsKIAZeIA2i1cKHuY6GeS2.jpg',
-  whole: 'dQ4lxeApBk_Adllm_0utRh4e9_3IRTjp-j76JdJ0jwj8mrwmTtpvLsq2-lh2UZipwbt0_c05A3Co0sg10S63uPxA-givLyjl8MDMzvSMwvm4k2MDeVst8nX09CXo3sbA9UqA1hHulU_am6PdohDQZEwjke5eaVw1YKnL_s3E1fZa1rUsSsj6Usmbo1coHNfm.jpg',
-  bundles: 'tq77HwjLAAu834gPgCyBIcyTerd5ywKD7-Hh1qqT7efvr7PxMKaelrvO_YlouFo38JMFGI8_pTsr7HHjTRq191WvInZTtblna4HW209iwE_ewETpBbW9sajM92Bj6FbwsscDRYr13YnRc5T2c2Sqcb8cFAv5bPMWioPQqRXhdgVfIbpMQibwukosDLud78qF.jpg'
+  whole: 'broiler whole chicken.jpg',
+  cuts: 'chicken breast.jpg',
+  bundles: 'dQ4lxeApBk_Adllm_0utRh4e9_3IRTjp-j76JdJ0jwj8mrwmTtpvLsq2-lh2UZipwbt0_c05A3Co0sg10S63uPxA-givLyjl8MDMzvSMwvm4k2MDeVst8nX09CXo3sbA9UqA1hHulU_am6PdohDQZEwjke5eaVw1YKnL_s3E1fZa1rUsSsj6Usmbo1coHNfm.jpg'
 };
 const peso = n => '₱' + Number(n).toFixed(2);
 const $ = (s, el = document) => el.querySelector(s);
