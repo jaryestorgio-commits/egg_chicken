@@ -5,16 +5,28 @@ async function renderShop(){
     let list=await api.getProducts({search:state.q,category:state.cat});
     const s={low:(a,b)=>a.price-b.price,high:(a,b)=>b.price-a.price,newest:(a,b)=>b.created-a.created}[state.sort]; if(s) list.sort(s);
     grid.innerHTML=list.length?(await Promise.all(list.map(cardHTML))).join(''):'<div class="empty"><h3>No products found</h3><p>Try another category or clear your search.</p></div>';
-  }catch(err){ grid.innerHTML=`<div class="empty"><h3>Couldn't load products</h3><p>${err.message}. Please try again.</p></div>`; }
+  }catch(err){ grid.innerHTML=`<div class="empty"><h3>Couldn't load products</h3><p>${err.message}</p><button class="btn btn-outline" id="retry-products" type="button">Try again</button></div>`; $('#retry-products').onclick=renderShop; }
 }
 async function initShop(){
   try{$('#chips').innerHTML=(await api.getCategories()).map(c=>`<button class="chip ${c.id===state.cat?'on':''}" data-c="${c.id}">${c.name}</button>`).join('')}
-  catch(error){$('#grid').innerHTML=`<div class="empty"><h3>Couldn't load categories</h3><p>${error.message}</p></div>`;return}
+  catch(error){$('#grid').innerHTML=`<div class="empty"><h3>Couldn't load categories</h3><p>${error.message}</p><button class="btn btn-outline" id="retry-categories" type="button">Try again</button></div>`;$('#retry-categories').onclick=initShop;return}
   $('#chips').onclick=e=>{const b=e.target.closest('[data-c]');if(!b)return;state.cat=b.dataset.c;document.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===b));renderShop()};
   $('#q').oninput=e=>{state.q=e.target.value.toLowerCase();renderShop()}; $('#sort').onchange=e=>{state.sort=e.target.value;renderShop()};
   renderShop();
 }
-async function initBest(){ try{const l=(await api.getProducts()).slice(0,4);$('#best').innerHTML=(await Promise.all(l.map(cardHTML))).join('')}catch(error){$('#best').innerHTML=`<div class="empty">${error.message}</div>`} }
+async function initBest(){
+  const best=$('#best');
+  best.innerHTML='<div class="skeleton"></div>'.repeat(4);
+  try{
+    const products=await api.getProducts();
+    best.innerHTML=products.length
+      ? (await Promise.all(products.slice(0,4).map(cardHTML))).join('')
+      : '<div class="empty"><h3>No products available</h3><p>Please check back soon.</p></div>';
+  }catch(error){
+    best.innerHTML=`<div class="empty"><h3>Couldn't load products</h3><p>${error.message}</p><button class="btn btn-outline" id="retry-best" type="button">Try again</button></div>`;
+    $('#retry-best').onclick=initBest;
+  }
+}
 async function initDetail(){
   const id=new URLSearchParams(location.search).get('id'), box=$('#detail');
   if(!id){box.innerHTML='<div class="empty"><h3>Product not found</h3><a class="btn btn-primary" href="products.html">Back to shop</a></div>';return}
