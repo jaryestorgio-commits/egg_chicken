@@ -254,10 +254,10 @@ function configureMobileNavigation(){
   const active=page==='index.html'||!page?'home'
     :page==='products.html'||page==='product-details.html'?'shop'
     :page==='cart.html'||page==='checkout.html'?'cart'
-    :page==='orders.html'||page==='order-details.html'?'orders'
-    :page==='profile.html'?'profile':'';
+    :page==='orders.html'||page==='order-details.html'?'dashboard'
+    :page==='profile.html'?(new URLSearchParams(location.search).get('view')==='profile-details'?'profile':'dashboard'):'';
   const profile=$('[data-mobile-nav="profile"]');
-  if(profile)profile.href=`${ROOT}pages/profile.html`;
+  if(profile)profile.href=`${ROOT}pages/profile.html?view=profile-details`;
   if(active){
     const activeLink=$(`[data-mobile-nav="${active}"]`);
     activeLink?.classList.add('active');
@@ -332,7 +332,7 @@ async function initializeCustomerChat() {
   if (!customer || customer.role !== 'customer') return;
   const root = document.createElement('section');
   root.className = 'customer-chat';
-  root.innerHTML = '<button class="customer-chat-toggle" type="button" aria-expanded="false" aria-controls="customer-chat-panel">Chat with the farm</button><section class="customer-chat-panel" id="customer-chat-panel" hidden aria-label="Customer support chat"><header><div><strong>Farm support</strong><small>Ask about products or an order</small></div><button type="button" aria-label="Close chat" data-chat-close>×</button></header><div class="customer-chat-messages" aria-live="polite"><p class="customer-chat-empty">Loading your messages…</p></div><p class="customer-chat-error" role="alert" hidden></p><form class="customer-chat-compose"><label class="sr-only" for="customer-chat-order">Related order</label><select id="customer-chat-order" name="order_id"><option value="">General question</option></select><label class="sr-only" for="customer-chat-input">Your message</label><textarea id="customer-chat-input" name="message" rows="2" maxlength="4000" required placeholder="Write a message…"></textarea><button type="submit" aria-label="Send message">Send</button></form></section>';
+  root.innerHTML = '<button class="customer-chat-toggle" type="button" aria-label="Chat with us" title="Chat with us" aria-expanded="false" aria-controls="customer-chat-panel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8z"/></svg></button><section class="customer-chat-panel" id="customer-chat-panel" hidden aria-label="Customer support chat"><header><div><strong>Farm support</strong><small>Ask about products or an order</small></div><button type="button" aria-label="Close chat" data-chat-close>×</button></header><div class="customer-chat-messages" aria-live="polite"><p class="customer-chat-empty">Loading your messages…</p></div><p class="customer-chat-error" role="alert" hidden></p><form class="customer-chat-compose"><label class="sr-only" for="customer-chat-order">Related order</label><select id="customer-chat-order" name="order_id"><option value="">General question</option></select><label class="sr-only" for="customer-chat-input">Your message</label><textarea id="customer-chat-input" name="message" rows="2" maxlength="4000" required placeholder="Write a message…"></textarea><button type="submit" aria-label="Send message">Send</button></form></section>';
   document.body.append(root);
   const panel = $('.customer-chat-panel', root);
   const toggle = $('.customer-chat-toggle', root);

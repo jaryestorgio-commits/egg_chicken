@@ -57,8 +57,10 @@ const accountErrorMessage = error => {
     : [];
   return details.length ? `${error.message}: ${details.join(', ')}` : error.message;
 };
-let accountOrders = [];
+let accountOrders = null;
+let accountWishlistProducts = [];
 let accountAddressesLoaded = false;
+let accountWishlistLoaded = false;
 
 function showAccountMessage(element, message, isError = false) {
   element.textContent = message;
@@ -67,10 +69,11 @@ function showAccountMessage(element, message, isError = false) {
 
 function renderAccountOrders(target, orders, mode) {
   if (!orders.length) {
-    target.innerHTML = `<div class="account-empty card"><span aria-hidden="true">🥚</span><h3>${mode === 'recent' ? 'No orders yet' : 'Your order list is empty'}</h3><p>Your orders will appear here after checkout.</p><a class="btn btn-primary btn-sm" href="${ROOT}pages/products.html">Browse the shop</a></div>`;
+    const emptyTitle = mode === 'tracking' ? 'No orders to track yet' : 'No orders yet';
+    target.innerHTML = `<div class="account-empty card"><span aria-hidden="true">🥚</span><h3>${emptyTitle}</h3><p>Your orders will appear here after checkout.</p><a class="btn btn-primary btn-sm" href="${ROOT}pages/products.html">Browse the shop</a></div>`;
     return;
   }
-  const displayedOrders = mode === 'recent' ? orders.slice(0, 3) : orders;
+  const displayedOrders = mode === 'dashboard' || mode === 'tracking' ? orders.slice(0, 3) : orders;
   target.innerHTML = displayedOrders.map(order => {
     const id = encodeURIComponent(order.id);
     const status = accountEscape(order.status || 'pending');
@@ -85,9 +88,25 @@ function renderAccountOrders(target, orders, mode) {
   }).join('');
 }
 
+function updateDashboardStats() {
+  const total = $('#stat-total-orders');
+  const pending = $('#stat-pending-orders');
+  const completed = $('#stat-completed-orders');
+  const wishlist = $('#stat-wishlist-items');
+  if (total) total.textContent = accountOrders ? String(accountOrders.length) : '—';
+  if (pending) pending.textContent = accountOrders
+    ? String(accountOrders.filter(order => ['pending', 'confirmed', 'processing', 'shipped', 'out_for_delivery'].includes(String(order.status || '').toLowerCase())).length)
+    : '—';
+  if (completed) completed.textContent = accountOrders
+    ? String(accountOrders.filter(order => ['delivered', 'completed'].includes(String(order.status || '').toLowerCase())).length)
+    : '—';
+  if (wishlist) wishlist.textContent = accountWishlistLoaded ? String(accountWishlistProducts.length) : '—';
+}
+
 async function loadAccountOrders() {
   const targets = [
-    ['#recent-orders', 'recent'],
+    ['#dashboard-orders', 'dashboard'],
+    ['#dashboard-tracking', 'tracking'],
     ['#all-orders', 'orders'],
     ['#tracking-orders', 'tracking']
   ];
@@ -95,30 +114,49 @@ async function loadAccountOrders() {
   try {
     accountOrders = await api.getOrders();
     targets.forEach(([selector, mode]) => { const target = $(selector); if (target) renderAccountOrders(target, accountOrders, mode); });
+    updateDashboardStats();
   } catch (error) {
     targets.forEach(([selector]) => {
       const target = $(selector);
       if (target) target.innerHTML = `<div class="account-empty card"><h3>Couldn't load orders</h3><p>${accountEscape(error.message)}</p><button class="btn btn-outline btn-sm" type="button" data-account-retry="orders">Try again</button></div>`;
     });
+    accountOrders = null;
+    updateDashboardStats();
   }
 }
 
 async function loadAccountWishlist() {
   const target = $('#wishlist-items');
-  target.innerHTML = '<div class="account-loading" role="status">Loading your saved products…</div>';
+  if (target) target.innerHTML = '<div class="account-loading" role="status">Loading your saved products…</div>';
+  const dashboardTarget = $('#dashboard-wishlist');
+  if (dashboardTarget) dashboardTarget.innerHTML = '<div class="account-loading" role="status">Loading saved products…</div>';
   try {
     const savedIds = api.getWishlistIds();
     if (!savedIds.length) {
-      target.innerHTML = '<div class="account-empty card"><span aria-hidden="true">♡</span><h3>Your wishlist is waiting</h3><p>Save products from the shop and they will show up here.</p><a class="btn btn-primary btn-sm" href="../pages/products.html">Explore products</a></div>';
+      accountWishlistProducts = [];
+      accountWishlistLoaded = true;
+      if (target) target.innerHTML = '<div class="account-empty card"><span aria-hidden="true">♡</span><h3>Your wishlist is waiting</h3><p>Save products from the shop and they will show up here.</p><a class="btn btn-primary btn-sm" href="../pages/products.html">Explore products</a></div>';
+      if (dashboardTarget) dashboardTarget.innerHTML = '<div class="account-empty card"><h3>No saved products yet</h3><p>Save favorites from the shop to find them here.</p></div>';
+      updateDashboardStats();
       return;
     }
     const products = await api.getProducts();
     const savedProducts = products.filter(product => savedIds.includes(Number(product.id)));
-    target.innerHTML = savedProducts.length
+    accountWishlistProducts = savedProducts;
+    accountWishlistLoaded = true;
+    if (target) target.innerHTML = savedProducts.length
       ? (await Promise.all(savedProducts.map(cardHTML))).join('')
       : '<div class="account-empty card"><h3>Saved products are no longer available</h3><p>Browse the shop to find something fresh to save.</p><a class="btn btn-primary btn-sm" href="../pages/products.html">Explore products</a></div>';
+    if (dashboardTarget) dashboardTarget.innerHTML = savedProducts.length
+      ? (await Promise.all(savedProducts.slice(0, 2).map(cardHTML))).join('')
+      : '<div class="account-empty card"><h3>Saved products are no longer available</h3><p>Browse the shop to find something fresh to save.</p></div>';
+    updateDashboardStats();
   } catch (error) {
-    target.innerHTML = `<div class="account-empty card"><h3>Couldn't load your wishlist</h3><p>${accountEscape(error.message)}</p><button class="btn btn-outline btn-sm" type="button" data-account-retry="wishlist">Try again</button></div>`;
+    accountWishlistLoaded = false;
+    accountWishlistProducts = [];
+    if (target) target.innerHTML = `<div class="account-empty card"><h3>Couldn't load your wishlist</h3><p>${accountEscape(error.message)}</p><button class="btn btn-outline btn-sm" type="button" data-account-retry="wishlist">Try again</button></div>`;
+    if (dashboardTarget) dashboardTarget.innerHTML = `<div class="account-empty card"><h3>Couldn't load your wishlist</h3><p>${accountEscape(error.message)}</p></div>`;
+    updateDashboardStats();
   }
 }
 
@@ -136,11 +174,13 @@ function addressFields(address) {
 
 async function loadAccountAddresses() {
   const target = $('#addresses-list');
-  target.innerHTML = '<div class="account-loading" role="status">Loading your addresses…</div>';
+  const dashboardTarget = $('#dashboard-addresses');
+  if (target) target.innerHTML = '<div class="account-loading" role="status">Loading your addresses…</div>';
+  if (dashboardTarget) dashboardTarget.innerHTML = '<div class="account-loading" role="status">Loading your addresses…</div>';
   try {
     const addresses = await api.getAddresses();
     accountAddressesLoaded = true;
-    target.innerHTML = addresses.length ? addresses.map(address => `<article class="card address-card">
+    if (target) target.innerHTML = addresses.length ? addresses.map(address => `<article class="card address-card">
       <form class="address-edit-form" data-address-id="${accountEscape(address.id)}">
         <div class="address-heading"><h3>Saved address</h3>${address.is_default ? '<span class="account-status status-default">Default</span>' : ''}</div>
         ${addressFields(address)}
@@ -148,9 +188,14 @@ async function loadAccountAddresses() {
         <div class="account-form-actions"><button class="btn btn-outline btn-sm" type="submit">Save address</button><button class="address-delete" type="button" data-delete-address="${accountEscape(address.id)}">Remove</button></div>
       </form>
     </article>`).join('') : '<div class="account-empty card"><h3>No saved addresses</h3><p>Add a delivery address to make checkout quicker.</p></div>';
+    if (dashboardTarget) dashboardTarget.innerHTML = addresses.length ? addresses.slice(0, 2).map(address => `<article class="card dashboard-address-card">
+      <span class="dashboard-address-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0z"/><circle cx="12" cy="10" r="2.5"/></svg></span>
+      <div><div class="address-heading"><h4>${accountEscape(address.full_name)}</h4>${address.is_default ? '<span class="account-status status-default">Default</span>' : ''}</div><p>${accountEscape(address.address_line)}, ${accountEscape(address.city)}, ${accountEscape(address.province)} ${accountEscape(address.postal_code)}</p><small>${accountEscape(address.phone)}</small></div>
+    </article>`).join('') : '<div class="account-empty card"><h3>No saved addresses</h3><p>Add a delivery address to make checkout quicker.</p></div>';
   } catch (error) {
     accountAddressesLoaded = false;
-    target.innerHTML = `<div class="account-empty card"><h3>Couldn't load your addresses</h3><p>${accountEscape(error.message)}</p><button class="btn btn-outline btn-sm" type="button" data-account-retry="addresses">Try again</button></div>`;
+    if (target) target.innerHTML = `<div class="account-empty card"><h3>Couldn't load your addresses</h3><p>${accountEscape(error.message)}</p><button class="btn btn-outline btn-sm" type="button" data-account-retry="addresses">Try again</button></div>`;
+    if (dashboardTarget) dashboardTarget.innerHTML = `<div class="account-empty card"><h3>Couldn't load your addresses</h3><p>${accountEscape(error.message)}</p></div>`;
   }
 }
 
@@ -162,31 +207,148 @@ async function initProfile(){
   syncAccountNav();
   navMedia.addEventListener('change', syncAccountNav);
 
+  const requestedView = new URLSearchParams(location.search).get('view');
+  const initialView = requestedView === 'profile-details' ? 'profile-details' : 'dashboard';
+  document.querySelectorAll('.account-view').forEach(view => { view.hidden = view.dataset.view !== initialView; });
+  document.querySelectorAll('.side [data-account-view]').forEach(button => button.classList.toggle('on', button.dataset.accountView === initialView));
+
+  const viewHeadings = {
+    dashboard: ['Dashboard', 'A clear view of your orders, saved products, and delivery details.'],
+    'profile-details': ['Profile Details', 'Review and update the details connected to your account.'],
+    orders: ['My Orders', 'Review your customer order history.'],
+    tracking: ['Order Tracking', 'Follow the latest status of your orders.'],
+    wishlist: ['Wishlist', 'Find the products you have saved for later.'],
+    addresses: ['Saved Addresses', 'Manage the delivery addresses saved to your account.'],
+    settings: ['Settings', 'Keep your account secure by updating your password.']
+  };
+  const initialHeading = viewHeadings[initialView];
+  $('#account-page-title').textContent = initialHeading[0];
+  $('#account-page-description').textContent = initialHeading[1];
+  document.title = `${initialHeading[0]} | Egg & Chicken`;
   document.querySelectorAll('[data-account-view]').forEach(button => {
     button.addEventListener('click', () => {
       const viewName = button.dataset.accountView;
       document.querySelectorAll('.account-view').forEach(view => { view.hidden = view.dataset.view !== viewName; });
       document.querySelectorAll('.side [data-account-view]').forEach(link => link.classList.toggle('on', link.dataset.accountView === viewName));
+      const heading = viewHeadings[viewName];
+      if (heading) {
+        $('#account-page-title').textContent = heading[0];
+        $('#account-page-description').textContent = heading[1];
+        document.title = `${heading[0]} | Egg & Chicken`;
+      }
+      const profileQuery = viewName === 'profile-details' ? '?view=profile-details' : '';
+      history.replaceState(null, '', `${location.pathname}${profileQuery}`);
+      document.querySelectorAll('.mobile-nav-item').forEach(link => {
+        link.classList.remove('active');
+        link.removeAttribute('aria-current');
+      });
+      const mobileView = $(`[data-mobile-nav="${viewName === 'profile-details' ? 'profile' : 'dashboard'}"]`);
+      mobileView?.classList.add('active');
+      mobileView?.setAttribute('aria-current', 'page');
       if (!navMedia.matches) nav.open = false;
       if (viewName === 'addresses' && !accountAddressesLoaded) loadAccountAddresses();
-      if (viewName === 'wishlist') loadAccountWishlist();
+      if (viewName === 'wishlist' || viewName === 'dashboard') loadAccountWishlist();
     });
   });
 
   const accountError = $('#account-error');
+  const detailList = $('.profile-detail-list');
+  const editProfileButton = $('#edit-profile');
+  const profileForm = $('#profile-form');
+  let accountUser = null;
+  const setProfileEditing = editing => {
+    profileForm.hidden = !editing;
+    detailList.hidden = editing;
+    editProfileButton.hidden = editing;
+    if (editing) $('#profile-name').focus();
+  };
+  const displayProfile = user => {
+    accountUser = user;
+    const nameParts = String(user.name || '').trim().split(/\s+/).filter(Boolean);
+    const initials = nameParts.slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'EC';
+    $('#account-name').textContent = user.name || 'Customer';
+    $('#account-email').textContent = user.email || '';
+    $('#account-role').textContent = String(user.role || 'customer').replace(/^\w/, letter => letter.toUpperCase());
+    $('#profile-name').value = user.name || '';
+    $('#profile-email').value = user.email || '';
+    $('#profile-first-name').textContent = nameParts[0] || '—';
+    $('#profile-last-name').textContent = nameParts.slice(1).join(' ') || '—';
+    $('#profile-email-value').textContent = user.email || '—';
+    $('#profile-role-value').textContent = String(user.role || 'customer').replace(/^\w/, letter => letter.toUpperCase());
+    const joined = user.created_at ? new Date(user.created_at) : null;
+    $('#profile-joined-value').textContent = joined && !Number.isNaN(joined.getTime())
+      ? new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'long', day: 'numeric' }).format(joined)
+      : 'Not available';
+    $('#account-avatar').textContent = initials;
+    $('#profile-photo-input').dataset.userId = String(user.id);
+    const photo = $('#account-avatar-image');
+    try {
+      const savedPhoto = localStorage.getItem(`ec_profile_avatar_${user.id}`);
+      photo.hidden = !savedPhoto;
+      if (savedPhoto) photo.src = savedPhoto;
+    } catch (error) {
+      console.error('Customer profile picture could not be loaded', error);
+    }
+  };
   try {
     const user = await api.getProfile();
     if (!user) { location.href = 'login.html'; return; }
-    $('#account-name').textContent = user.name || 'Customer';
-    $('#account-email').textContent = user.email || '';
-    $('#profile-name').value = user.name || '';
-    $('#profile-email').value = user.email || '';
+    displayProfile(user);
+    $('#profile-photo-error').hidden = true;
   } catch (error) {
     accountError.hidden = false;
     accountError.innerHTML = `<strong>Couldn't load your account.</strong> ${accountEscape(error.message)} <button type="button" class="btn btn-outline btn-sm" id="retry-account">Try again</button>`;
     $('#retry-account').onclick = () => location.reload();
   }
   loadAccountOrders();
+  loadAccountWishlist();
+  loadAccountAddresses();
+
+  $('#change-profile-photo').addEventListener('click', () => $('#profile-photo-input').click());
+  $('#profile-photo-input').addEventListener('change', event => {
+    const photoInput = event.currentTarget;
+    const file = photoInput.files[0];
+    const errorText = $('#profile-photo-error');
+    errorText.hidden = true;
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) {
+      errorText.textContent = 'Choose a JPEG, PNG, WebP, or GIF image.';
+      errorText.hidden = false;
+      photoInput.value = '';
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      errorText.textContent = 'Choose an image smaller than 2 MB.';
+      errorText.hidden = false;
+      photoInput.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.addEventListener('load', () => {
+      try {
+        const userId = photoInput.dataset.userId;
+        if (!userId) throw new Error('Your account could not be identified.');
+        localStorage.setItem(`ec_profile_avatar_${userId}`, reader.result);
+        const photo = $('#account-avatar-image');
+        photo.src = reader.result;
+        photo.hidden = false;
+      } catch (error) {
+        errorText.textContent = `The profile picture could not be saved on this device. ${error.message}`;
+        errorText.hidden = false;
+      }
+    });
+    reader.addEventListener('error', () => {
+      errorText.textContent = 'The selected image could not be read. Choose another image.';
+      errorText.hidden = false;
+    });
+    reader.readAsDataURL(file);
+  });
+  editProfileButton.addEventListener('click', () => setProfileEditing(true));
+  $('#cancel-profile-edit').addEventListener('click', () => {
+    if (accountUser) displayProfile(accountUser);
+    $('#profile-error').textContent = '';
+    setProfileEditing(false);
+  });
 
   $('#profile-form').onsubmit = async event => {
     event.preventDefault();
@@ -201,9 +363,8 @@ async function initProfile(){
     submit.textContent = 'Saving…';
     try {
       const updated = await api.updateProfile(Object.fromEntries(new FormData(form)));
-      $('#account-name').textContent = updated.name;
-      $('#account-email').textContent = updated.email;
-      showAccountMessage(status, 'Profile saved successfully.');
+      displayProfile(updated);
+      setProfileEditing(false);
       toast('Profile updated');
     } catch (error) {
       showAccountMessage(errorText, accountErrorMessage(error), true);
@@ -313,7 +474,7 @@ async function initProfile(){
     if (retry?.dataset.accountRetry === 'addresses') loadAccountAddresses();
   });
   document.addEventListener('wishlist:changed', () => {
-    if ($('[data-view="wishlist"]:not([hidden])')) loadAccountWishlist();
+    loadAccountWishlist();
   });
 
   $('#logout').onclick = async () => {

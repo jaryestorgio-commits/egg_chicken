@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>My Account | Egg &amp; Chicken</title>
+    <title>Customer Dashboard | Egg &amp; Chicken</title>
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/auth.css">
 </head>
@@ -13,54 +13,90 @@
         <div class="wrap account-wrap">
             <header class="account-heading">
                 <p class="eyebrow">Your farm-fresh account</p>
-                <h1>My account</h1>
-                <p>Manage your profile, orders, addresses, and preferences.</p>
+                <h1 id="account-page-title">Dashboard</h1>
+                <p id="account-page-description">A clear view of your orders, saved products, and delivery details.</p>
             </header>
+            <section class="account-hero" aria-label="Customer profile">
+                <div class="account-hero-person">
+                    <div class="account-photo-wrap">
+                        <div class="account-avatar" id="account-avatar" aria-hidden="true">EC</div>
+                        <img class="account-avatar-image" id="account-avatar-image" alt="Your profile picture" hidden>
+                        <button class="account-photo-change" id="change-profile-photo" type="button" aria-label="Change profile picture" title="Change profile picture">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h3l1.5-2h7L17 7h3v12H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+                        </button>
+                        <input id="profile-photo-input" type="file" accept="image/*" hidden>
+                    </div>
+                    <div class="account-hero-copy">
+                        <p class="account-hero-kicker">Welcome back</p>
+                        <h2 id="account-name">Loading your account…</h2>
+                        <p id="account-email"></p>
+                    </div>
+                </div>
+                <div class="account-hero-status"><span aria-hidden="true"></span><strong id="account-role">Customer</strong><small>Active account</small></div>
+            </section>
+            <p class="account-photo-error" id="profile-photo-error" role="alert" hidden></p>
             <div class="account">
                 <details class="account-nav">
                     <summary>Account menu <span aria-hidden="true">⌄</span></summary>
                     <nav class="side card" aria-label="Account">
-                        <button class="on" type="button" data-account-view="profile">Profile</button>
-                        <button type="button" data-account-view="orders">My Orders</button>
-                        <button type="button" data-account-view="tracking">Order Tracking</button>
-                        <button type="button" data-account-view="wishlist">Wishlist</button>
-                        <button type="button" data-account-view="addresses">Addresses</button>
-                        <button type="button" data-account-view="settings">Settings</button>
-                        <button type="button" id="logout">Logout</button>
+                        <button class="on" type="button" data-account-view="dashboard"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="5" rx="1"/><rect x="13" y="10" width="8" height="11" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/></svg><span><strong>Dashboard</strong><small>Your store activity</small></span></button>
+                        <button type="button" data-account-view="profile-details"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span><strong>Profile Details</strong><small>Personal information</small></span></button>
+                        <button type="button" data-account-view="orders"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10a2 2 0 0 1 2 2v16l-7-4-7 4V5a2 2 0 0 1 2-2z"/><path d="M9 8h6M9 12h6"/></svg><span><strong>My Orders</strong><small>Order history</small></span></button>
+                        <button type="button" data-account-view="tracking"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span><strong>Order Tracking</strong><small>Updates and delivery</small></span></button>
+                        <button type="button" data-account-view="wishlist"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8z"/></svg><span><strong>Wishlist</strong><small>Your saved products</small></span></button>
+                        <button type="button" data-account-view="addresses"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0z"/><circle cx="12" cy="10" r="2.5"/></svg><span><strong>Saved Addresses</strong><small>Delivery destinations</small></span></button>
+                        <button type="button" data-account-view="settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.7a8 8 0 0 1-1.6.9l-.3 1.8h-2.8l-.3-1.8a8 8 0 0 1-1.6-.9l-1.7.7-1.4-2.4 1.4-1.1a7 7 0 0 1 0-1.9l-1.4-1.1 1.4-2.4 1.7.7a8 8 0 0 1 1.6-.9l.3-1.8h2.8l.3 1.8a8 8 0 0 1 1.6.9l1.7-.7 1.4 2.4-1.4 1.1a7 7 0 0 1-.1 1.8z"/></svg><span><strong>Settings</strong><small>Update your password</small></span></button>
+                        <button class="account-logout" type="button" id="logout"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5M15 12H3"/><path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6"/></svg><span><strong>Logout</strong><small>Sign out of your account</small></span></button>
                     </nav>
                 </details>
                 <div class="account-content">
-                    <section class="account-view" data-view="profile" aria-labelledby="account-name">
-                        <div class="card account-panel">
-                            <div class="account-user">
-                                <div class="account-avatar" aria-hidden="true">EC</div>
-                                <div>
-                                    <p class="eyebrow">Welcome back</p>
-                                    <h2 id="account-name">Loading your account…</h2>
-                                    <p id="account-email"></p>
-                                </div>
+                    <section class="account-view" data-view="dashboard" aria-labelledby="dashboard-title">
+                        <div class="account-section-title account-view-heading"><div><p class="eyebrow">Your activity</p><h2 id="dashboard-title">Dashboard overview</h2></div></div>
+                        <div class="account-stat-grid" aria-label="Order and wishlist summary">
+                            <article class="account-stat-card"><span class="account-stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h10a2 2 0 0 1 2 2v16l-7-4-7 4V5a2 2 0 0 1 2-2z"/><path d="M9 8h6M9 12h6"/></svg></span><span class="account-stat-copy"><small>Total orders</small><strong id="stat-total-orders">—</strong></span></article>
+                            <article class="account-stat-card"><span class="account-stat-icon is-pending" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span class="account-stat-copy"><small>Pending orders</small><strong id="stat-pending-orders">—</strong></span></article>
+                            <article class="account-stat-card"><span class="account-stat-icon is-complete" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></span><span class="account-stat-copy"><small>Completed orders</small><strong id="stat-completed-orders">—</strong></span></article>
+                            <article class="account-stat-card"><span class="account-stat-icon is-wishlist" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8z"/></svg></span><span class="account-stat-copy"><small>Wishlist items</small><strong id="stat-wishlist-items">—</strong></span></article>
+                        </div>
+                        <section class="account-dashboard-section" aria-labelledby="dashboard-orders-title">
+                            <div class="account-section-title"><div><p class="eyebrow">Latest activity</p><h3 id="dashboard-orders-title">My Orders</h3></div><button class="account-section-link" type="button" data-account-view="orders">View all</button></div>
+                            <div id="dashboard-orders" class="account-order-list" aria-live="polite"><div class="account-loading" role="status">Loading your orders…</div></div>
+                        </section>
+                        <section class="account-dashboard-section" aria-labelledby="dashboard-tracking-title">
+                            <div class="account-section-title"><div><p class="eyebrow">Stay up to date</p><h3 id="dashboard-tracking-title">Order Tracking</h3></div><button class="account-section-link" type="button" data-account-view="tracking">Track an order</button></div>
+                            <div id="dashboard-tracking" class="account-order-list" aria-live="polite"><div class="account-loading" role="status">Loading tracking updates…</div></div>
+                        </section>
+                        <section class="account-dashboard-section" aria-labelledby="dashboard-wishlist-title">
+                            <div class="account-section-title"><div><p class="eyebrow">Saved for later</p><h3 id="dashboard-wishlist-title">Wishlist</h3></div><button class="account-section-link" type="button" data-account-view="wishlist">View wishlist</button></div>
+                            <div id="dashboard-wishlist" class="account-dashboard-products grid g3" aria-live="polite"><div class="account-loading" role="status">Loading saved products…</div></div>
+                        </section>
+                        <section class="account-dashboard-section" aria-labelledby="dashboard-addresses-title">
+                            <div class="account-section-title"><div><p class="eyebrow">Ready for delivery</p><h3 id="dashboard-addresses-title">Saved Addresses</h3></div><button class="account-section-link" type="button" data-account-view="addresses">Manage addresses</button></div>
+                            <div id="dashboard-addresses" class="account-dashboard-addresses" aria-live="polite"><div class="account-loading" role="status">Loading your addresses…</div></div>
+                        </section>
+                    </section>
+                    <section class="account-view" data-view="profile-details" aria-labelledby="profile-details-title" hidden>
+                        <div class="account-section-title account-view-heading"><div><p class="eyebrow">Your account</p><h2 id="profile-details-title">Profile Details</h2><p>Review and update the details connected to your account.</p></div><button class="btn btn-outline btn-sm" id="edit-profile" type="button">Edit profile</button></div>
+                        <div class="card account-panel profile-details-card">
+                            <div class="profile-detail-list">
+                                <div class="profile-detail"><span>First name</span><strong id="profile-first-name">—</strong></div>
+                                <div class="profile-detail"><span>Last name</span><strong id="profile-last-name">—</strong></div>
+                                <div class="profile-detail"><span>Email</span><strong id="profile-email-value">—</strong></div>
+                                <div class="profile-detail"><span>Account role</span><strong id="profile-role-value">—</strong></div>
+                                <div class="profile-detail"><span>Joined</span><strong id="profile-joined-value">—</strong></div>
                             </div>
-                            <form id="profile-form" class="account-form" novalidate>
-                                <div class="account-section-title">
-                                    <div><h3>Profile information</h3><p>Keep your contact details up to date.</p></div>
-                                </div>
+                            <form id="profile-form" class="account-form profile-edit-form" novalidate hidden>
                                 <div class="account-fields">
-                                    <div><label for="profile-name">Full name</label><input id="profile-name" name="name" required maxlength="120" autocomplete="name"></div>
-                                    <div><label for="profile-email">Email address</label><input id="profile-email" name="email" type="email" required maxlength="120" autocomplete="email"></div>
+                                    <div class="field-wide"><label for="profile-name">Full name</label><input id="profile-name" name="name" required maxlength="120" autocomplete="name"></div>
+                                    <div class="field-wide"><label for="profile-email">Email address</label><input id="profile-email" name="email" type="email" required maxlength="120" autocomplete="email"></div>
                                 </div>
                                 <p class="account-message error" id="profile-error" role="alert"></p>
                                 <div class="account-form-actions">
                                     <button class="btn btn-primary" type="submit">Save changes</button>
+                                    <button class="btn btn-outline btn-sm" id="cancel-profile-edit" type="button">Cancel</button>
                                     <span class="account-message" id="profile-status" role="status" aria-live="polite"></span>
                                 </div>
                             </form>
-                        </div>
-                        <div class="account-section-title account-orders-title">
-                            <div><p class="eyebrow">Your latest activity</p><h2>Recent orders</h2></div>
-                            <button class="btn btn-outline btn-sm" type="button" data-account-view="orders">View all orders</button>
-                        </div>
-                        <div id="recent-orders" class="account-order-list" aria-live="polite">
-                            <div class="account-loading" role="status">Loading your recent orders…</div>
                         </div>
                     </section>
                     <section class="account-view" data-view="orders" aria-labelledby="orders-title" hidden>
