@@ -1,4 +1,6 @@
 from flask import Blueprint, request
+from datetime import date
+import re
 from sqlalchemy.exc import IntegrityError
 from extensions import db
 from models import Address, User
@@ -9,6 +11,8 @@ from utils.validators import request_data, required_string, valid_email
 
 users_bp = Blueprint("users", __name__)
 ADDRESS_FIELDS = ("full_name", "phone", "address_line", "city", "province", "postal_code")
+NOTIFICATION_FIELDS = ("email_order_updates", "email_promotions", "sms_order_updates", "sms_promotions")
+PHONE_PATTERN = re.compile(r"^[0-9+().\-\s]{6,40}$")
 
 
 @users_bp.get("/me")
@@ -40,6 +44,29 @@ def update_profile():
             if existing:
                 return error_response("Email already registered", status=409)
             user.email = email
+    if "phone" in data:
+        phone = data["phone"]
+        if phone is None or phone == "":
+            user.phone = None
+        elif not isinstance(phone, str) or len(phone.strip()) > 40 or not PHONE_PATTERN.fullmatch(phone.strip()):
+            errors["phone"] = "Enter a valid phone number"
+        else:
+            user.phone = phone.strip()
+    if "birthday" in data:
+        birthday = data["birthday"]
+        if birthday in (None, ""):
+            user.birthday = None
+        elif not isinstance(birthday, str):
+            errors["birthday"] = "Enter a valid birthday"
+        else:
+            try:
+                parsed_birthday = date.fromisoformat(birthday)
+                if parsed_birthday > date.today():
+                    errors["birthday"] = "Birthday cannot be in the future"
+                else:
+                    user.birthday = parsed_birthday
+            except ValueError:
+                errors["birthday"] = "Enter a valid birthday"
     if errors:
         db.session.rollback()
         return error_response("Validation failed", errors, 400)
@@ -49,6 +76,40 @@ def update_profile():
         db.session.rollback()
         return error_response("Email already exists", status=409)
     return success_response({"user": user.to_dict()}, "Profile updated")
+
+
+@users_bp.get("/me/preferences")
+@login_required
+def get_notification_preferences():
+    user = current_user()
+    return success_response({
+        "preferences": {field: getattr(user, field) for field in NOTIFICATION_FIELDS}
+    })
+
+
+@users_bp.patch("/me/preferences")
+@users_bp.put("/me/preferences")
+@login_required
+def update_notification_preferences():
+    data = request_data(request)
+    if data is None:
+        return error_response("A JSON object is required", status=400)
+    errors = {}
+    for field, value in data.items():
+        if field not in NOTIFICATION_FIELDS:
+            errors[field] = "This notification preference is not supported"
+        elif not isinstance(value, bool):
+            errors[field] = "This preference must be a boolean"
+    if errors:
+        return error_response("Validation failed", errors, 422)
+    user = current_user()
+    for field in data:
+        setattr(user, field, data[field])
+    db.session.commit()
+    return success_response(
+        {"preferences": {field: getattr(user, field) for field in NOTIFICATION_FIELDS}},
+        "Notification preferences updated",
+    )
 
 
 @users_bp.put("/me/password")
@@ -101,7 +162,11 @@ def create_address():
     if errors:
         return error_response("Validation failed", errors, 422)
     user_id = current_user().id
-    is_default = bool(data.get("is_default", False))
+    is_default = data.get("is_default", False)
+    if not isinstance(is_default, bool):
+        errors["is_default"] = "is_default must be a boolean"
+    if errors:
+        return error_response("Validation failed", errors, 422)
     if is_default:
         Address.query.filter_by(user_id=user_id, is_default=True).update({"is_default": False})
     address = Address(user_id=user_id, is_default=is_default, **values)
@@ -144,6 +209,15 @@ def update_address(address_id):
 @login_required
 def delete_address(address_id):
     address = Address.query.filter_by(id=address_id, user_id=current_user().id).first_or_404()
+    was_default = address.is_default
+    user_id = address.user_id
     db.session.delete(address)
+    if was_default:
+        next_address = Address.query.filter(
+            Address.user_id == user_id,
+            Address.id != address.id,
+        ).order_by(Address.id).first()
+        if next_address:
+            next_address.is_default = True
     db.session.commit()
     return success_response({}, "Address deleted")

@@ -5,7 +5,7 @@ async function initCheckout(){
   const t=totals(l);
   $('#items').innerHTML=l.map(i=>`<div><span>${i.qty} × ${i.name}</span><span>${peso(i.price*i.qty)}</span></div>`).join('')||'<p>Your cart is empty.</p>';
   $('#place').disabled=!l.length;
-  try{const user=await api.getProfile();if(user){$('#name').value=user.name||'';$('#email').value=user.email||''}}
+  try{const user=await api.getProfile();if(user){$('#name').value=user.name||'';$('#email').value=user.email||'';$('#phone').value=user.phone||''}}
   catch(error){$('#err').textContent=error.message;return}
   const draw=pick=>{const fee=pick==='pickup'||t.sub>=FREE_OVER?0:FEE;$('#csub').textContent=peso(t.sub);$('#cfee').textContent=fee?peso(fee):'Free';$('#ctotal').textContent=peso(t.sub+fee)};
   draw('standard'); document.querySelectorAll('[name=delivery]').forEach(r=>r.onchange=()=>draw(r.value));

@@ -163,6 +163,115 @@ def test_profile_update_rejects_duplicate_email(client):
     assert response.get_json()["success"] is False
 
 
+def test_profile_supports_phone_and_birthday(client):
+    token = register(client).get_json()["data"]["access_token"]
+    headers = auth_headers(token)
+
+    updated = client.patch("/api/v1/users/me", json={
+        "phone": "+63 912 345 6789",
+        "birthday": "1994-06-15",
+    }, headers=headers)
+
+    assert updated.status_code == 200
+    assert updated.get_json()["data"]["user"]["phone"] == "+63 912 345 6789"
+    assert updated.get_json()["data"]["user"]["birthday"] == "1994-06-15"
+
+
+@pytest.mark.parametrize("payload", [
+    {"phone": "not a phone"},
+    {"birthday": "not-a-date"},
+    {"birthday": "2999-01-01"},
+])
+def test_profile_rejects_invalid_contact_details(client, payload):
+    token = register(client).get_json()["data"]["access_token"]
+
+    response = client.patch("/api/v1/users/me", json=payload, headers=auth_headers(token))
+
+    assert response.status_code == 400
+    assert response.get_json()["success"] is False
+
+
+def test_notification_preferences_are_private_and_persisted(client):
+    first_token = register(client, email="first@example.com").get_json()["data"]["access_token"]
+    second_token = register(client, email="second@example.com").get_json()["data"]["access_token"]
+    first_headers = auth_headers(first_token)
+
+    defaults = client.get("/api/v1/users/me/preferences", headers=first_headers)
+    updated = client.patch("/api/v1/users/me/preferences", json={
+        "email_promotions": True,
+        "sms_order_updates": True,
+    }, headers=first_headers)
+    second_preferences = client.get("/api/v1/users/me/preferences", headers=auth_headers(second_token))
+
+    assert defaults.status_code == 200
+    assert defaults.get_json()["data"]["preferences"]["email_order_updates"] is True
+    assert updated.status_code == 200
+    assert updated.get_json()["data"]["preferences"]["email_promotions"] is True
+    assert second_preferences.get_json()["data"]["preferences"]["email_promotions"] is False
+
+
+@pytest.mark.parametrize("payload", [
+    {"sms_promotions": "yes"},
+    {"card_number": "4111111111111111"},
+])
+def test_notification_preferences_reject_invalid_or_unsupported_fields(client, payload):
+    token = register(client).get_json()["data"]["access_token"]
+
+    response = client.patch("/api/v1/users/me/preferences", json=payload, headers=auth_headers(token))
+
+    assert response.status_code == 422
+    assert response.get_json()["success"] is False
+
+
+def test_notification_preferences_require_authentication(client):
+    response = client.get("/api/v1/users/me/preferences")
+
+    assert response.status_code == 401
+
+
+def test_address_default_is_validated_and_reassigned_after_delete(client):
+    token = register(client).get_json()["data"]["access_token"]
+    headers = auth_headers(token)
+    address_data = {
+        "full_name": "Test Person",
+        "phone": "+63 912 345 6789",
+        "address_line": "12 Farm Road",
+        "city": "Manila",
+        "province": "Metro Manila",
+        "postal_code": "1000",
+    }
+
+    invalid = client.post(
+        "/api/v1/users/me/addresses",
+        json={**address_data, "is_default": "false"},
+        headers=headers,
+    )
+    first = client.post(
+        "/api/v1/users/me/addresses",
+        json={**address_data, "is_default": True},
+        headers=headers,
+    )
+    second = client.post(
+        "/api/v1/users/me/addresses",
+        json={**address_data, "address_line": "24 Market Street"},
+        headers=headers,
+    )
+    deleted = client.delete(
+        f"/api/v1/users/me/addresses/{first.get_json()['data']['address']['id']}",
+        headers=headers,
+    )
+    remaining = client.get("/api/v1/users/me/addresses", headers=headers)
+
+    assert invalid.status_code == 422
+    assert first.status_code == 201
+    assert second.status_code == 201
+    assert deleted.status_code == 200
+    addresses = remaining.get_json()["data"]["addresses"]
+    assert len(addresses) == 1
+    assert addresses[0]["id"] == second.get_json()["data"]["address"]["id"]
+    assert addresses[0]["is_default"] is True
+
+
 def test_password_change_requires_current_password_and_replaces_hash(client, app):
     token = register(client).get_json()["data"]["access_token"]
     headers = auth_headers(token)

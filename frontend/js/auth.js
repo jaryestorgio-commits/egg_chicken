@@ -61,6 +61,7 @@ let accountOrders = null;
 let accountWishlistProducts = [];
 let accountAddressesLoaded = false;
 let accountWishlistLoaded = false;
+let accountNotificationPreferencesLoaded = false;
 
 function showAccountMessage(element, message, isError = false) {
   element.textContent = message;
@@ -199,6 +200,31 @@ async function loadAccountAddresses() {
   }
 }
 
+async function loadNotificationPreferences() {
+  const loading = $('#notification-loading');
+  const loadError = $('#notification-load-error');
+  const options = $('#notification-options');
+  loading.hidden = false;
+  loading.textContent = 'Loading your preferences…';
+  loadError.hidden = true;
+  options.hidden = true;
+  try {
+    const preferences = await api.getNotificationPreferences();
+    Object.entries(preferences).forEach(([name, value]) => {
+      const input = $('#notification-form').elements.namedItem(name);
+      if (input) input.checked = value;
+    });
+    accountNotificationPreferencesLoaded = true;
+    loading.hidden = true;
+    options.hidden = false;
+  } catch (error) {
+    accountNotificationPreferencesLoaded = false;
+    loading.hidden = true;
+    loadError.innerHTML = `${accountEscape(error.message)} <button class="btn btn-outline btn-sm" type="button" data-account-retry="notifications">Try again</button>`;
+    loadError.hidden = false;
+  }
+}
+
 async function initProfile(){
   if(!requireAuth())return;
   const nav = $('.account-nav');
@@ -208,18 +234,21 @@ async function initProfile(){
   navMedia.addEventListener('change', syncAccountNav);
 
   const requestedView = new URLSearchParams(location.search).get('view');
-  const initialView = requestedView === 'profile-details' ? 'profile-details' : 'dashboard';
+  const availableViews = new Set(['dashboard', 'profile-details', 'orders', 'tracking', 'wishlist', 'addresses', 'payment-methods', 'notifications', 'settings']);
+  const initialView = availableViews.has(requestedView) ? requestedView : 'dashboard';
   document.querySelectorAll('.account-view').forEach(view => { view.hidden = view.dataset.view !== initialView; });
   document.querySelectorAll('.side [data-account-view]').forEach(button => button.classList.toggle('on', button.dataset.accountView === initialView));
 
   const viewHeadings = {
     dashboard: ['Dashboard', 'A clear view of your orders, saved products, and delivery details.'],
-    'profile-details': ['Profile Details', 'Review and update the details connected to your account.'],
+    'profile-details': ['Personal Information', 'Review and update the details connected to your account.'],
     orders: ['My Orders', 'Review your customer order history.'],
     tracking: ['Order Tracking', 'Follow the latest status of your orders.'],
     wishlist: ['Wishlist', 'Find the products you have saved for later.'],
-    addresses: ['Saved Addresses', 'Manage the delivery addresses saved to your account.'],
-    settings: ['Settings', 'Keep your account secure by updating your password.']
+    addresses: ['Delivery Addresses', 'Manage the delivery addresses saved to your account.'],
+    'payment-methods': ['Payment Methods', 'Review how payment information is handled at checkout.'],
+    notifications: ['Notification Preferences', 'Choose which email and SMS updates you receive.'],
+    settings: ['Password & Security', 'Keep your account secure by updating your password.']
   };
   const initialHeading = viewHeadings[initialView];
   $('#account-page-title').textContent = initialHeading[0];
@@ -236,8 +265,8 @@ async function initProfile(){
         $('#account-page-description').textContent = heading[1];
         document.title = `${heading[0]} | Egg & Chicken`;
       }
-      const profileQuery = viewName === 'profile-details' ? '?view=profile-details' : '';
-      history.replaceState(null, '', `${location.pathname}${profileQuery}`);
+      const viewQuery = viewName === 'dashboard' ? '' : `?view=${encodeURIComponent(viewName)}`;
+      history.replaceState(null, '', `${location.pathname}${viewQuery}`);
       document.querySelectorAll('.mobile-nav-item').forEach(link => {
         link.classList.remove('active');
         link.removeAttribute('aria-current');
@@ -247,9 +276,11 @@ async function initProfile(){
       mobileView?.setAttribute('aria-current', 'page');
       if (!navMedia.matches) nav.open = false;
       if (viewName === 'addresses' && !accountAddressesLoaded) loadAccountAddresses();
+      if (viewName === 'notifications' && !accountNotificationPreferencesLoaded) loadNotificationPreferences();
       if (viewName === 'wishlist' || viewName === 'dashboard') loadAccountWishlist();
     });
   });
+  if (initialView === 'notifications') loadNotificationPreferences();
 
   const accountError = $('#account-error');
   const detailList = $('.profile-detail-list');
@@ -271,9 +302,16 @@ async function initProfile(){
     $('#account-role').textContent = String(user.role || 'customer').replace(/^\w/, letter => letter.toUpperCase());
     $('#profile-name').value = user.name || '';
     $('#profile-email').value = user.email || '';
+    $('#profile-phone').value = user.phone || '';
+    $('#profile-birthday').value = user.birthday || '';
     $('#profile-first-name').textContent = nameParts[0] || '—';
     $('#profile-last-name').textContent = nameParts.slice(1).join(' ') || '—';
     $('#profile-email-value').textContent = user.email || '—';
+    $('#profile-phone-value').textContent = user.phone || 'Not provided';
+    const birthday = user.birthday ? new Date(`${user.birthday}T00:00:00`) : null;
+    $('#profile-birthday-value').textContent = birthday && !Number.isNaN(birthday.getTime())
+      ? new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'long', day: 'numeric' }).format(birthday)
+      : 'Not provided';
     $('#profile-role-value').textContent = String(user.role || 'customer').replace(/^\w/, letter => letter.toUpperCase());
     const joined = user.created_at ? new Date(user.created_at) : null;
     $('#profile-joined-value').textContent = joined && !Number.isNaN(joined.getTime())
@@ -428,6 +466,32 @@ async function initProfile(){
     }
   };
 
+  $('#notification-form').onsubmit = async event => {
+    event.preventDefault();
+    if (!accountNotificationPreferencesLoaded) return;
+    const form = event.currentTarget;
+    const errorText = $('#notification-error');
+    const status = $('#notification-status');
+    const submit = form.querySelector('[type="submit"]');
+    errorText.textContent = '';
+    status.textContent = '';
+    const preferences = Object.fromEntries(
+      [...form.querySelectorAll('input[type="checkbox"][name]')].map(input => [input.name, input.checked])
+    );
+    submit.disabled = true;
+    submit.textContent = 'Saving…';
+    try {
+      await api.updateNotificationPreferences(preferences);
+      showAccountMessage(status, 'Your notification preferences have been saved.');
+      toast('Preferences saved');
+    } catch (error) {
+      showAccountMessage(errorText, accountErrorMessage(error), true);
+    } finally {
+      submit.disabled = false;
+      submit.textContent = 'Save preferences';
+    }
+  };
+
   document.addEventListener('submit', async event => {
     const form = event.target.closest('.address-edit-form');
     if (!form) return;
@@ -472,6 +536,7 @@ async function initProfile(){
     if (retry?.dataset.accountRetry === 'orders') loadAccountOrders();
     if (retry?.dataset.accountRetry === 'wishlist') loadAccountWishlist();
     if (retry?.dataset.accountRetry === 'addresses') loadAccountAddresses();
+    if (retry?.dataset.accountRetry === 'notifications') loadNotificationPreferences();
   });
   document.addEventListener('wishlist:changed', () => {
     loadAccountWishlist();

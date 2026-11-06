@@ -303,3 +303,37 @@
 	.profile-detail{padding:15px 18px}
 	.account-view-heading>.btn{width:auto}
 }
+.payment-settings-card{max-width:760px;padding:34px}
+.payment-settings-card h3{margin-top:16px;font-size:1.2rem}
+.payment-settings-card>p{max-width:590px;margin-top:8px;color:#647268}
+.payment-security-mark{display:grid;width:48px;height:48px;place-items:center;border:1px solid #dfe9dc;border-radius:14px;background:#f1f6ef;color:#276044}
+.payment-security-mark svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.7}
+.payment-security-note{display:grid;gap:3px;margin-top:22px;padding:16px 18px;border:1px solid #e4eae2;border-radius:10px;background:#f8faf6}
+.payment-security-note strong{color:#276044;font-size:.9rem}
+.payment-security-note span{color:#647268;font-size:.84rem}
+.notification-panel{max-width:760px}
+.notification-panel #notification-options{display:grid;gap:22px}
+.notification-panel #notification-options[hidden]{display:none}
+.notification-group{display:grid;gap:0}
+.notification-group-heading{display:flex;align-items:center;gap:12px;padding-bottom:14px;border-bottom:1px solid #edf1eb}
+.notification-icon{display:grid;width:40px;height:40px;flex:0 0 40px;place-items:center;border-radius:12px;background:#edf3e9;color:#276044;font-size:.82rem;font-weight:800}
+.notification-group-heading h3{font-size:1rem}
+.notification-group-heading p{margin-top:3px;color:#718075;font-size:.83rem}
+.notification-option{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:70px;margin:0;padding:13px 2px;border-bottom:1px solid #edf1eb;cursor:pointer}
+.notification-option>span{display:grid;gap:3px}
+.notification-option strong{color:#34483a;font-size:.9rem}
+.notification-option small{color:#718075;font-size:.8rem;font-weight:400}
+.notification-option input{position:relative;width:42px;height:24px;min-height:24px;flex:0 0 42px;margin:0;border:0;border-radius:999px;background:#cbd6ca;appearance:none;cursor:pointer;transition:background-color .18s}
+.notification-option input::before{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.18);content:"";transition:transform .18s}
+.notification-option input:checked{background:#276044}
+.notification-option input:checked::before{transform:translateX(18px)}
+.notification-option input:focus-visible{outline:3px solid rgba(229,184,79,.75);outline-offset:3px}
+.notification-option input:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:600px){
+	.payment-settings-card{padding:22px}
+	.notification-panel{padding:20px}
+	.notification-option{min-height:66px}
+}
+@media(prefers-reduced-motion:reduce){
+	.notification-option input,.notification-option input::before{transition:none}
+}
