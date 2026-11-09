@@ -444,6 +444,7 @@ function renderDashboardOverview(stats, period) {
 		? 'No previous-period comparison'
 		: `${Number(value) >= 0 ? '↑' : '↓'} ${Math.abs(Number(value)).toFixed(1)}% vs previous period`;
 	const salesChange = periodSales.gross_sales_change_percent;
+	const ordersChange = periodSales.orders_change_percent;
 	const dateLabel = new Intl.DateTimeFormat(undefined, {
 		day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Manila'
 	}).format(new Date(`${stats.store_today}T12:00:00+08:00`));
