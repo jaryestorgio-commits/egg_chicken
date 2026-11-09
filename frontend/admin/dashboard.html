@@ -3,31 +3,43 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width,initial-scale=1">
-	<title>Dashboard | Egg &amp; Chicken Admin</title>
+	<title>Overview | Egg &amp; Chicken Admin</title>
 	<link rel="stylesheet" href="../css/style.css">
 	<link rel="stylesheet" href="../css/admin.css">
 </head>
 <body data-admin-page="dashboard">
 	<div class="admin-shell">
 		<aside class="admin-sidebar" id="admin-sidebar">
-			<a class="admin-brand" href="dashboard.html"><span class="admin-brand-mark" aria-hidden="true">E</span><span>Egg &amp; Chicken<small>Store administration</small></span></a>
-			<nav class="admin-nav" aria-label="Admin navigation">
-				<a class="active" aria-current="page" href="dashboard.html">Overview</a><a href="products.html">Products</a><a href="inventory.html">Inventory</a><a href="orders.html">Orders</a><a href="customers.html">Customers</a><a href="reports.html">Reports &amp; analytics</a><a href="messages.html">Messages &amp; support</a>
-			</nav>
-			<div class="admin-sidebar-footer"><a href="account.html">Settings</a><button class="admin-logout" type="button" data-admin-logout>Sign out</button><a class="store-link" href="../index.html">View storefront</a></div>
+			<a class="admin-brand" href="dashboard.html"><span class="admin-brand-mark" aria-hidden="true">E</span><span>Egg &amp; Chicken<small>Merchant admin</small></span></a>
+			<nav class="admin-nav" aria-label="Admin navigation"></nav>
+			<div class="admin-store-switcher" title="Store switching is not available in this single-store account">
+				<span class="admin-store-icon" aria-hidden="true">▣</span>
+				<span><strong>Egg &amp; Chicken</strong><small><i data-store-health></i><span data-store-status>Checking store API…</span></small></span>
+				<span aria-hidden="true">⌄</span>
+			</div>
+			<div class="admin-sidebar-promo"><span aria-hidden="true">☼</span><strong>Fresh stock, every morning.</strong><p>Log today's farm delivery to keep available stock accurate.</p><a href="inventory.html">Receive stock →</a></div>
+			<div class="admin-sidebar-footer"><a href="account.html">Settings</a><a href="messages.html">Help &amp; support</a><button class="admin-logout" type="button" data-admin-logout>Sign out</button><div class="admin-system-status"><i></i> Admin API connected</div></div>
 		</aside>
 		<button class="admin-drawer-backdrop" type="button" aria-label="Close navigation" data-admin-menu-close></button>
 		<main class="admin-main">
-			<header class="admin-topbar"><div class="admin-heading"><button class="admin-menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="admin-sidebar" data-admin-menu-toggle>☰</button><div><p class="eyebrow">Store overview</p><h1>Dashboard</h1><p class="admin-subtitle">A live view of your store's performance.</p></div></div><div class="admin-actions"><span class="admin-greeting" data-admin-greeting></span><button class="btn btn-outline btn-sm" id="admin-refresh" type="button">Refresh</button></div></header>
+			<header class="admin-topbar"><div class="admin-breadcrumb"><span>Workspace</span><i>/</i><strong>Overview</strong></div><div class="admin-actions"><span class="admin-greeting" data-admin-greeting></span></div></header>
 			<div class="admin-alert" id="admin-error" role="alert" hidden></div>
 			<div class="admin-toast" id="admin-toast" role="status" aria-live="polite"></div>
-			<section class="admin-stat-grid" id="admin-stats" aria-label="Store metrics"><div class="admin-loading" role="status">Loading store metrics…</div></section>
-			<section class="admin-panel admin-status-summary"><div class="admin-section-heading"><div><p class="eyebrow">At a glance</p><h2>Order status</h2></div><a class="admin-text-link" href="orders.html">Manage orders →</a></div><div class="admin-status-grid" id="dashboard-statuses"><div class="admin-loading" role="status">Loading order status…</div></div></section>
-			<div class="admin-dashboard-grid">
-				<section class="admin-panel admin-chart-panel"><div class="admin-section-heading"><div><p class="eyebrow">Paid revenue</p><h2>Sales over the last 7 days</h2></div><a class="admin-text-link" href="reports.html">View reports →</a></div><div class="admin-chart-summary" id="dashboard-revenue"></div><div class="admin-chart" id="dashboard-sales-chart" role="img" aria-label="Paid revenue over the last seven days"><div class="admin-loading" role="status">Loading sales data…</div></div></section>
-				<section class="admin-panel admin-top-products-panel"><div class="admin-section-heading"><div><p class="eyebrow">Customer favorites</p><h2>Top-selling products</h2></div><a class="admin-text-link" href="products.html">Manage products →</a></div><div class="admin-top-products" id="dashboard-top-products"><div class="admin-loading" role="status">Loading top products…</div></div></section>
+			<section class="admin-welcome">
+				<div><h1 id="dashboard-welcome">A fresh start.</h1><p>Here’s what’s happening at your store today.</p></div>
+				<div class="admin-welcome-actions"><button class="btn btn-outline btn-sm" type="button" data-export-report>↓ <span>Export report</span></button><a class="btn btn-primary btn-sm" href="orders.html?create=1">＋ <span>Create order</span></a></div>
+			</section>
+			<div class="admin-dashboard-period"><div class="admin-date-pill"><span aria-hidden="true">▦</span><span id="dashboard-date">Today</span></div><label class="sr-only" for="dashboard-period">Sales period</label><select id="dashboard-period"><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="1">Today</option></select><span id="dashboard-comparison">Compared with the previous period</span><small class="admin-updated">↻ Updated just now · PHT</small></div>
+			<section class="admin-stat-grid admin-overview-stats" id="admin-stats" aria-label="Store metrics"><div class="admin-loading" role="status">Loading store metrics…</div></section>
+			<div class="admin-dashboard-grid admin-overview-grid">
+				<section class="admin-panel admin-chart-panel"><div class="admin-section-heading"><div><h2>Sales performance</h2></div><div class="admin-chart-legend"><span><i></i> Eggs</span><span><i></i> Chicken</span></div></div><div class="admin-sales-summary"><strong id="dashboard-revenue">₱0.00</strong><small>gross sales · merchandise only</small></div><div class="admin-chart-period-label" id="dashboard-chart-period">Last 7 days</div><div class="admin-chart admin-overview-chart" id="dashboard-sales-chart" role="img" aria-label="Egg and chicken sales over the selected period"><div class="admin-loading" role="status">Loading sales data…</div></div></section>
+				<section class="admin-panel admin-fulfillment-panel"><div class="admin-section-heading"><h2>Today’s fulfillment</h2><span class="admin-count-badge" id="fulfillment-total">0 to do</span></div><div id="dashboard-fulfillment"><div class="admin-loading" role="status">Loading fulfillment…</div></div></section>
 			</div>
-			<section class="admin-panel"><div class="admin-section-heading"><div><p class="eyebrow">Latest activity</p><h2>Recent orders</h2></div><a class="admin-text-link" href="orders.html">View all →</a></div><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Order</th><th>Customer</th><th>Date</th><th>Status</th><th>Total</th><th>Payment</th></tr></thead><tbody id="dashboard-orders"><tr><td colspan="6" class="admin-empty">Loading recent orders…</td></tr></tbody></table></div></section>
+			<div class="admin-dashboard-grid admin-overview-grid admin-overview-bottom">
+				<section class="admin-panel admin-recent-panel"><div class="admin-section-heading"><div><h2>Recent orders</h2><span class="admin-inline-count" id="recent-orders-count"></span></div><a class="admin-text-link" href="orders.html">View all orders →</a></div><div class="admin-table-wrap"><table class="admin-table admin-overview-table"><thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Total</th><th>Payment</th><th>Fulfillment</th></tr></thead><tbody id="dashboard-orders"><tr><td colspan="6" class="admin-empty">Loading recent orders…</td></tr></tbody></table></div><div class="admin-table-caption" id="dashboard-order-caption"></div></section>
+				<section class="admin-panel admin-low-stock-panel"><div class="admin-section-heading"><div><h2>Low-stock inventory</h2><small>Available stock after order reservations</small></div><span class="admin-count-badge" id="low-stock-count">0 items</span></div><div id="dashboard-low-stock"><div class="admin-loading" role="status">Loading inventory…</div></div><a class="admin-text-link admin-low-stock-link" href="inventory.html">Manage inventory →</a></section>
+			</div>
+			<footer class="admin-dashboard-footer"><span>All amounts in Philippine peso (PHP) · Philippine time (UTC+8)</span><span>Egg &amp; Chicken · Single store</span></footer>
 		</main>
 	</div>
 	<dialog class="admin-dialog admin-detail-dialog" id="order-dialog"><div class="admin-dialog-content"><button type="button" class="admin-dialog-close" aria-label="Close order details" data-dialog-close>×</button><div id="order-detail-content"></div></div></dialog>

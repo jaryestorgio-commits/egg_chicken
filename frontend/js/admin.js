@@ -8,7 +8,7 @@ const ORDER_STATUSES = ['pending', 'confirmed', 'processing', 'shipped', 'delive
 const LOW_STOCK_LIMIT = 10;
 const PAGE_SIZE = 10;
 const adminPage = document.body.dataset.adminPage;
-const adminState = { products: [], categories: [], orders: [], users: [], inventory: [], profile: null, report: null };
+const adminState = { products: [], categories: [], orders: [], users: [], inventory: [], profile: null, report: null, dashboard: null, discounts: [] };
 const adminPages = { products: 1, orders: 1, inventory: 1, customers: 1 };
 let activeConversationId = null;
 let loadedOrderCustomerId = null;
@@ -16,6 +16,7 @@ let notificationRefreshTimer;
 let conversationRefreshTimer;
 let customersLoadSequence = 0;
 const adminQuery = selector => document.querySelector(selector);
+const adminQueryAll = selector => [...document.querySelectorAll(selector)];
 const getAdminToken = () => localStorage.getItem(ADMIN_TOKEN_KEY) || sessionStorage.getItem(ADMIN_TOKEN_KEY);
 const clearAdminToken = () => { localStorage.removeItem(ADMIN_TOKEN_KEY); sessionStorage.removeItem(ADMIN_TOKEN_KEY); };
 const adminMoney = value => '₱' + Number(value || 0).toFixed(2);
@@ -26,9 +27,16 @@ const adminIsoDate = value => {
 	const date = new Date(value);
 	return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 };
+const adminStoreToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Manila' }).format(new Date());
+const adminStoreDateOffset = (value, days) => {
+	const date = new Date(`${value}T00:00:00Z`);
+	date.setUTCDate(date.getUTCDate() + days);
+	return date.toISOString().slice(0, 10);
+};
 
 function adminIconSvg(name) {
 	const paths = {
+		search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',
 		'dashboard.html': '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>',
 		'products.html': '<path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4.5 7.7 7.5 4.4 7.5-4.4M12 12v9"/>',
 		'inventory.html': '<path d="m12 3 8 4.5-8 4.5-8-4.5L12 3Z"/><path d="m4 12 8 4.5 8-4.5M4 16.5 12 21l8-4.5"/>',
@@ -36,20 +44,39 @@ function adminIconSvg(name) {
 		'customers.html': '<path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
 		'reports.html': '<path d="M4 19V5M4 19h17"/><path d="m7 15 4-4 3 2 6-7"/>',
 		'messages.html': '<path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8A8.5 8.5 0 0 1 8.7 3.9a8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5Z"/>',
+		'deliveries.html': '<path d="M3 7h11v10H3zM14 10h4l3 3v4h-7z"/><circle cx="7.5" cy="19" r="1.5"/><circle cx="17.5" cy="19" r="1.5"/>',
+		'discounts.html': '<path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3.4 13.4a2 2 0 0 1 0-2.8l7.2-7.2A2 2 0 0 1 12 3h7a2 2 0 0 1 2 2v7a2 2 0 0 1-.4 1.4Z"/><circle cx="16.5" cy="7.5" r="1"/>',
 		'account.html': '<path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"/><path d="m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.7a8 8 0 0 1-1.8 1l-.3 1.8h-2.8l-.3-1.8a8 8 0 0 1-1.8-1l-1.7.7-1.4-2.4 1.4-1.1a7 7 0 0 1 0-2l-1.4-1.1 1.4-2.4 1.7.7a8 8 0 0 1 1.8-1l.3-1.8h2.8l.3 1.8a8 8 0 0 1 1.8 1l1.7-.7 1.4 2.4-1.4 1.1a7 7 0 0 1-.1 2Z"/>',
-		'notification': '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>'
+		'notification': '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>',
+		egg: '<path d="M12 3c-3.5 0-7 6.1-7 11a7 7 0 0 0 14 0c0-4.9-3.5-11-7-11Z"/>',
+		chicken: '<path d="M7 15c-2.2 0-4 1.3-4 3s1.8 3 4 3h8a6 6 0 0 0 0-12h-2"/><circle cx="16" cy="7" r="3"/><path d="m19 7 3 1-2 2M8 15c0-4 2-7 6-7"/>',
+		delivered: '<path d="m5 12 4 4L19 6"/><circle cx="12" cy="12" r="9"/>'
 	};
 	return `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] || ''}</svg>`;
 }
 
 function setupAdminCommunication() {
 	const sidebar = adminQuery('.admin-nav');
-	if (sidebar && !sidebar.querySelector('a[href="messages.html"]')) {
-		const link = document.createElement('a');
-		link.href = 'messages.html';
-		link.textContent = 'Messages';
-		if (adminPage === 'messages') link.classList.add('active');
-		sidebar.append(link);
+	if (sidebar) {
+		const links = [
+			['dashboard.html', 'Overview'],
+			['orders.html', 'Orders'],
+			['products.html', 'Products'],
+			['inventory.html', 'Inventory'],
+			['customers.html', 'Customers'],
+			['deliveries.html', 'Deliveries'],
+			['reports.html', 'Analytics'],
+			['discounts.html', 'Discounts'],
+			['account.html', 'Settings'],
+			['messages.html', 'Help & support']
+		];
+		sidebar.innerHTML = links.map(([href, label]) => {
+			const selected = href === `${adminPage}.html` || (adminPage === 'reports' && href === 'reports.html');
+			return `<a href="${href}"${selected ? ' class="active" aria-current="page"' : ''}><span class="admin-nav-icon" aria-hidden="true">${adminIconSvg(href)}</span><span>${label}</span></a>`;
+		}).join('');
+		if (!sidebar.parentElement.querySelector('.admin-store-switcher')) {
+			sidebar.insertAdjacentHTML('beforebegin', '<div class="admin-store-switcher" title="Store switching is not available in this single-store account"><span class="admin-store-icon" aria-hidden="true">▣</span><span><strong>Egg &amp; Chicken</strong><small><i data-store-health></i><span data-store-status>Checking store API…</span></small></span><span aria-hidden="true">⌄</span></div>');
+		}
 	}
 	sidebar?.querySelectorAll('a[href]').forEach(link => {
 		if (!link.querySelector('.admin-nav-icon')) {
@@ -72,6 +99,42 @@ function setupAdminCommunication() {
 	notifications.className = 'admin-notification-control';
 	notifications.innerHTML = `<button class="admin-notification-toggle" type="button" aria-label="Notifications" aria-expanded="false" data-notification-toggle>${adminIconSvg('notification')}<span class="admin-notification-count" data-notification-count hidden></span></button><section class="admin-notification-panel" data-notification-panel hidden><header><strong>Notifications</strong><button type="button" class="admin-link-button" data-notifications-read-all>Mark all read</button></header><div data-notification-list><p class="admin-empty">Loading notifications…</p></div></section>`;
 	actions?.prepend(notifications);
+	if (actions && !actions.querySelector('.admin-global-search')) {
+		const search = document.createElement('div');
+		const searchShortcut = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘ K' : 'Ctrl K';
+		search.className = 'admin-global-search';
+		search.innerHTML = `<span aria-hidden="true">${adminIconSvg('search')}</span><label class="sr-only" for="admin-global-search-input">Search orders, products, and customers</label><input id="admin-global-search-input" type="search" placeholder="Search orders, products, customers…" autocomplete="off"><kbd>${searchShortcut}</kbd><section class="admin-search-results" id="admin-search-results" hidden></section>`;
+		actions.prepend(search);
+	}
+	if (actions && !actions.querySelector('.admin-profile-menu')) {
+		const profileMenu = document.createElement('details');
+		profileMenu.className = 'admin-profile-menu';
+		profileMenu.innerHTML = `<summary><span class="admin-profile-avatar" data-admin-avatar>EC</span><span><strong data-admin-profile-name>Admin</strong><small>Store administrator</small></span><span aria-hidden="true">⌄</span></summary><div class="admin-profile-dropdown"><a href="account.html">Account settings</a><button type="button" data-admin-logout>Sign out</button></div>`;
+		actions.append(profileMenu);
+	}
+	const searchInput = adminQuery('#admin-global-search-input');
+	searchInput?.addEventListener('input', () => {
+		window.clearTimeout(adminSearchTimer);
+		adminSearchTimer = window.setTimeout(() => runAdminSearch(), 250);
+	});
+	searchInput?.addEventListener('keydown', event => {
+		if (event.key === 'Escape') {
+			adminQuery('#admin-search-results').hidden = true;
+			searchInput.blur();
+		}
+	});
+	document.addEventListener('keydown', event => {
+		if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+			event.preventDefault();
+			searchInput?.focus();
+		}
+	});
+	document.addEventListener('click', event => {
+		if (!event.target.closest('.admin-global-search')) {
+			const results = adminQuery('#admin-search-results');
+			if (results) results.hidden = true;
+		}
+	});
 	loadAdminNotifications().catch(error => showAdminError(error.message));
 	notificationRefreshTimer = window.setInterval(() => {
 		loadAdminNotifications().catch(error => console.error('Admin notifications could not be refreshed', error));
@@ -89,9 +152,27 @@ function setupAdminCommunication() {
 	}
 }
 
+function setAdminNavCount(href, value) {
+	const link = adminQuery(`.admin-nav a[href="${href}"]`);
+	if (!link) return;
+	let badge = link.querySelector('.admin-nav-count');
+	const count = Number(value) || 0;
+	if (!count) {
+		badge?.remove();
+		return;
+	}
+	if (!badge) {
+		badge = document.createElement('span');
+		badge.className = 'admin-nav-count';
+		link.append(badge);
+	}
+	badge.textContent = count > 99 ? '99+' : String(count);
+}
+
 async function loadAdminNotifications() {
 	const data = await adminRequest('/admin/notifications');
 	const count = Number(data.unread_count || 0);
+	setAdminNavCount('messages.html', (data.notifications || []).filter(item => item.kind === 'message' && !item.is_read).length);
 	const badge = adminQuery('[data-notification-count]');
 	if (badge) {
 		badge.textContent = count > 99 ? '99+' : String(count);
@@ -201,6 +282,32 @@ async function adminRequest(path, method = 'GET', body) {
 	return payload.data ?? payload;
 }
 
+let adminSearchTimer;
+async function runAdminSearch() {
+	const input = adminQuery('#admin-global-search-input');
+	const target = adminQuery('#admin-search-results');
+	if (!input || !target) return;
+	const query = input.value.trim();
+	if (query.length < 2) {
+		target.hidden = true;
+		target.innerHTML = '';
+		return;
+	}
+	target.hidden = false;
+	target.innerHTML = '<p class="admin-search-empty">Searching store records…</p>';
+	try {
+		const data = await adminRequest(`/admin/search?q=${encodeURIComponent(query)}`);
+		if (input.value.trim() !== query) return;
+		target.innerHTML = data.results?.length
+			? data.results.map(result => `<a href="${adminEscape(result.href)}"><small>${adminEscape(result.kind)}</small><strong>${adminEscape(result.label)}</strong><span>${adminEscape(result.detail)}</span></a>`).join('')
+			: '<p class="admin-search-empty">No matching orders, products, or customers.</p>';
+	} catch (error) {
+		if (input.value.trim() === query) {
+			target.innerHTML = `<p class="admin-search-empty">${adminEscape(error.message)}</p>`;
+		}
+	}
+}
+
 function showAdminError(message) {
 	const alert = adminQuery('#admin-error');
 	if (!alert) return;
@@ -256,44 +363,184 @@ function renderPagination(target, page, total, kind) {
 	target.innerHTML = `<span>${total} records</span><div class="admin-page-controls"><button class="btn btn-outline btn-sm" type="button" data-page-kind="${kind}" data-page="${page - 1}" ${page <= 1 ? 'disabled' : ''}>Previous</button><span>Page ${page} of ${pageCount}</span><button class="btn btn-outline btn-sm" type="button" data-page-kind="${kind}" data-page="${page + 1}" ${page >= pageCount ? 'disabled' : ''}>Next</button></div>`;
 }
 
+function applyPageSearch(selector) {
+	const url = new URL(location.href);
+	const search = url.searchParams.get('search');
+	if (!search) return;
+	const input = adminQuery(selector);
+	if (input) input.value = search;
+	url.searchParams.delete('search');
+	history.replaceState(null, '', url);
+}
+
 function slicePage(records, page) {
 	return records.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 }
 
 async function loadDashboard() {
-	const today = new Date();
-	const weekStart = new Date(today);
-	weekStart.setDate(today.getDate() - 6);
+	const today = adminStoreToday();
+	const period = Number(adminQuery('#dashboard-period')?.value || 7);
+	const start = period === 30 ? adminStoreDateOffset(today, -29)
+		: period === 1 ? today : adminStoreDateOffset(today, -6);
 	const params = new URLSearchParams({
-		start_date: adminIsoDate(weekStart),
-		end_date: adminIsoDate(today)
+		start_date: start,
+		end_date: today
 	});
-	const [stats, report] = await Promise.all([
-		adminRequest('/admin/dashboard'),
-		adminRequest(`/admin/reports?${params}`)
-	]);
-	const metricItems = [
-		['Paid revenue', adminMoney(stats.total_sales), 'Collected payments'],
-		['Total orders', stats.total_orders, 'All order records'],
-		['Active customers', stats.active_customers, 'Ordered in the past 30 days'],
-		['Products', stats.total_products, 'Catalog items'],
-		['Low stock', stats.low_stock_products, `At or below ${LOW_STOCK_LIMIT} units`, 'inventory.html'],
-		['Pending orders', stats.pending_orders, 'Awaiting confirmation', 'orders.html']
+	const stats = await adminRequest(`/admin/dashboard?${params}`);
+	adminState.dashboard = stats;
+	renderDashboardOverview(stats, period);
+}
+
+function exportDashboardReport() {
+	if (!adminState.dashboard) {
+		showAdminError('Dashboard data is not available to export yet.');
+		return;
+	}
+	const stats = adminState.dashboard;
+	const rows = [
+		['Report', 'Egg & Chicken store overview'],
+		['Currency', 'PHP'],
+		['Timezone', 'Asia/Manila'],
+		['Selected period gross sales', Number(stats.sales_period?.gross_sales || 0).toFixed(2)],
+		['Orders today', Number(stats.orders_today || 0)],
+		['Eggs sold today', Number(stats.eggs_sold || 0)],
+		['Egg sales today', Number(stats.eggs_sales || 0).toFixed(2)],
+		['Chicken sold today', Number(stats.chicken_sold || 0)],
+		['Chicken sales today', Number(stats.chicken_sales || 0).toFixed(2)],
+		[],
+		['Daily sales'],
+		['Date', 'Gross sales (PHP)', 'Egg sales (PHP)', 'Chicken sales (PHP)'],
+		...(stats.sales_by_day || []).map(day => [day.date, Number(day.gross_sales || 0).toFixed(2), Number(day.eggs_sales || 0).toFixed(2), Number(day.chicken_sales || 0).toFixed(2)]),
+		[],
+		['Recent orders'],
+		['Order ID', 'Customer', 'Items', 'Total (PHP)', 'Payment status', 'Fulfillment status'],
+		...(stats.recent_orders || []).map(order => [
+			order.id,
+			order.customer?.name || `Customer #${order.user_id}`,
+			(order.items || []).map(item => `${item.quantity} ${item.product_name}`).join('; '),
+			Number(order.total_amount || 0).toFixed(2),
+			order.payments?.[0]?.payment_status || 'not recorded',
+			order.status
+		])
 	];
-	adminQuery('#admin-stats').innerHTML = metricItems.map(([label, value, caption, href]) =>
-		`<article class="admin-stat"><span class="admin-stat-icon" aria-hidden="true">${adminIconSvg(label === 'Paid revenue' ? 'reports.html' : label === 'Total orders' || label === 'Pending orders' ? 'orders.html' : label === 'Customers' ? 'customers.html' : label === 'Products' ? 'products.html' : 'inventory.html')}</span><span>${adminEscape(label)}</span><strong>${adminEscape(value)}</strong><small>${href ? `<a href="${href}">${adminEscape(caption)} →</a>` : adminEscape(caption)}</small></article>`
-	).join('');
-	const statuses = stats.order_statuses || {};
-	adminQuery('#dashboard-statuses').innerHTML = ORDER_STATUSES.map(status =>
-		`<a class="admin-status-card" href="orders.html?status=${encodeURIComponent(status)}"><span>${statusPill(status)}</span><strong>${adminEscape(statuses[status] ?? 0)}</strong></a>`
+	const csv = rows.map(row => row.map(value => {
+		const text = String(value ?? '');
+		return `"${text.replace(/"/g, '""')}"`;
+	}).join(',')).join('\r\n');
+	const url = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' }));
+	const link = document.createElement('a');
+	link.href = url;
+	link.download = `egg-and-chicken-report-${stats.store_today || adminStoreToday()}.csv`;
+	document.body.append(link);
+	link.click();
+	link.remove();
+	URL.revokeObjectURL(url);
+	showAdminToast('Report exported as CSV.');
+}
+
+function renderDashboardOverview(stats, period) {
+	const periodSales = stats.sales_period || {};
+	const percentLabel = value => value === null || value === undefined
+		? 'No previous-period comparison'
+		: `${Number(value) >= 0 ? '↑' : '↓'} ${Math.abs(Number(value)).toFixed(1)}% vs previous period`;
+	const salesChange = periodSales.gross_sales_change_percent;
+	const dateLabel = new Intl.DateTimeFormat(undefined, {
+		day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Manila'
+	}).format(new Date(`${stats.store_today}T12:00:00+08:00`));
+	adminQuery('#dashboard-welcome').textContent = `A fresh start, ${adminState.profile?.name?.split(/\s+/)[0] || 'there'}.`;
+	adminQuery('#dashboard-date').textContent = `Today · ${dateLabel}`;
+	adminQuery('#dashboard-comparison').textContent = `${percentLabel(salesChange)} · ${percentLabel(ordersChange)}`;
+	adminQuery('#dashboard-chart-period').textContent = period === 1
+		? 'Today'
+		: period === 30 ? 'Last 30 days' : 'Last 7 days';
+	adminQuery('.admin-updated').textContent = `↻ Updated ${new Intl.DateTimeFormat(undefined, {
+		hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Manila'
+	}).format(new Date())} · PHT`;
+	const comparison = periodSales.gross_sales_change_percent;
+	const comparisonText = comparison === null || comparison === undefined
+		? 'First recorded period'
+		: `${comparison >= 0 ? '↑' : '↓'} ${Math.abs(comparison).toFixed(1)}% vs previous period`;
+	const metricItems = [
+		{ label: 'Gross sales', value: adminMoney(periodSales.gross_sales), note: comparisonText, icon: '₱', tone: 'is-forest' },
+		{ label: 'Orders today', value: stats.orders_today || 0, note: `Placed ${stats.store_today} · PHT`, icon: 'orders.html' },
+		{ label: 'Eggs sold', value: `${Number(stats.eggs_sold || 0).toLocaleString()} eggs`, note: `${adminMoney(stats.eggs_sales)} in selected-period sales`, icon: 'egg' },
+		{ label: 'Chicken sold', value: `${Number(stats.chicken_sold || 0).toLocaleString()} items`, note: `${adminMoney(stats.chicken_sales)} in selected-period sales`, icon: 'chicken' }
+	];
+	adminQuery('#admin-stats').innerHTML = metricItems.map(item =>
+		`<article class="admin-stat${item.tone ? ` ${item.tone}` : ''}"><span class="admin-stat-icon" aria-hidden="true">${item.icon === '₱' ? item.icon : adminIconSvg(item.icon)}</span><span>${adminEscape(item.label)}</span><strong>${adminEscape(item.value)}</strong><small>${adminEscape(item.note)}</small></article>`
 	).join('');
 	const orders = stats.recent_orders || [];
+	adminQuery('#recent-orders-count').textContent = `${orders.length} latest`;
 	adminQuery('#dashboard-orders').innerHTML = orders.length ? orders.map(order =>
-		`<tr><td><button class="admin-link-button" type="button" data-order-details="${adminEscape(order.id)}">#${adminEscape(order.id)}</button></td><td>${adminEscape(order.customer?.name || `Customer #${order.user_id}`)}<small>${adminEscape(order.customer?.email || '')}</small></td><td>${adminEscape(adminDate(order.created_at))}</td><td>${statusPill(order.status)}</td><td>${adminMoney(order.total_amount)}</td><td>${adminEscape(order.payments?.map(payment => payment.payment_status).join(', ') || 'Not recorded')}</td></tr>`
+		`<tr><td><button class="admin-link-button" type="button" data-order-details="${adminEscape(order.id)}">#EC-${adminEscape(order.id)}</button></td><td>${adminEscape(order.customer?.name || `Customer #${order.user_id}`)}</td><td>${adminEscape((order.items || []).map(item => `${item.quantity} ${item.product_name}`).join(', ') || '—')}</td><td>${adminMoney(order.total_amount)}</td><td>${statusPill(order.payments?.[0]?.payment_status || 'not recorded')}</td><td>${statusPill(order.status)}</td></tr>`
 	).join('') : adminEmptyRow(6, 'No orders yet.');
-	adminQuery('#dashboard-revenue').textContent = adminMoney(report.summary.revenue);
-	renderSalesChart(adminQuery('#dashboard-sales-chart'), report.sales_by_day || []);
-	renderTopProducts(adminQuery('#dashboard-top-products'), report.top_products || []);
+	adminQuery('#dashboard-order-caption').textContent = `Showing the latest ${orders.length} of ${Number(stats.total_orders || 0)} orders · merchandise totals include current order records`;
+	adminQuery('#dashboard-revenue').textContent = adminMoney(periodSales.gross_sales);
+	renderOverviewChart(adminQuery('#dashboard-sales-chart'), stats.sales_by_day || []);
+	renderFulfillment(stats.fulfillment || {});
+	renderLowStock(stats.low_stock_items || []);
+}
+
+function renderOverviewChart(target, sales) {
+	if (!target) return;
+	if (!sales.length || sales.every(row => !Number(row.gross_sales))) {
+		target.innerHTML = '<p class="admin-empty">No sales data is available for this period.</p>';
+		return;
+	}
+	const width = 720;
+	const height = 220;
+	const left = 46;
+	const top = 14;
+	const bottom = 35;
+	const plotHeight = height - top - bottom;
+	const maxValue = Math.max(...sales.map(row => Number(row.gross_sales) || 0), 1);
+	const barWidth = Math.min(34, 560 / sales.length);
+	const gap = (width - left - 12) / sales.length;
+	const grid = Array.from({ length: 4 }, (_, index) => {
+		const y = top + plotHeight - index * plotHeight / 3;
+		return `<line class="admin-chart-grid" x1="${left}" y1="${y}" x2="${width - 10}" y2="${y}"/><text class="admin-chart-axis" x="${left - 7}" y="${y + 4}" text-anchor="end">${adminEscape(adminMoney(maxValue * index / 3))}</text>`;
+	}).join('');
+	const bars = sales.map((item, index) => {
+		const eggs = Math.max(0, Number(item.eggs_sales) || 0);
+		const chicken = Math.max(0, Number(item.chicken_sales) || 0);
+		const other = Math.max(0, Number(item.gross_sales) - eggs - chicken);
+		const x = left + index * gap + (gap - barWidth) / 2;
+		const scale = plotHeight / maxValue;
+		const eggsHeight = eggs * scale;
+		const chickenHeight = chicken * scale;
+		const otherHeight = other * scale;
+		const yBase = top + plotHeight;
+		const date = new Date(`${item.date}T12:00:00+08:00`);
+		const label = sales.length <= 8
+			? new Intl.DateTimeFormat(undefined, { weekday: 'short', day: 'numeric', timeZone: 'Asia/Manila' }).format(date)
+			: (index === 0 || index === sales.length - 1 || index % 5 === 0
+				? new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', timeZone: 'Asia/Manila' }).format(date)
+				: '');
+		return `<g><title>${adminEscape(item.date)} · Eggs ${adminEscape(adminMoney(eggs))} · Chicken ${adminEscape(adminMoney(chicken))} · Total ${adminEscape(adminMoney(item.gross_sales))}</title>${eggsHeight ? `<rect class="admin-overview-bar-egg" x="${x}" y="${yBase - eggsHeight}" width="${barWidth}" height="${eggsHeight}" rx="3"/>` : ''}${chickenHeight ? `<rect class="admin-overview-bar-chicken" x="${x}" y="${yBase - eggsHeight - chickenHeight}" width="${barWidth}" height="${chickenHeight}" rx="3"/>` : ''}${otherHeight ? `<rect class="admin-overview-bar-other" x="${x}" y="${yBase - eggsHeight - chickenHeight - otherHeight}" width="${barWidth}" height="${otherHeight}" rx="3"/>` : ''}<text class="admin-chart-axis" x="${x + barWidth / 2}" y="${height - 8}" text-anchor="middle">${adminEscape(label)}</text></g>`;
+	}).join('');
+	target.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Daily gross sales by product type">${grid}${bars}</svg>`;
+}
+
+function renderFulfillment(fulfillment) {
+	const toPack = Number(fulfillment.to_pack || 0);
+	const dispatch = Number(fulfillment.ready_for_dispatch || 0);
+	const delivered = Number(fulfillment.delivered_today || 0);
+	adminQuery('#fulfillment-total').textContent = `${toPack + dispatch} to do`;
+	adminQuery('#dashboard-fulfillment').innerHTML = `
+		<a class="admin-fulfillment-row" href="orders.html"><span class="admin-fulfillment-icon">${adminIconSvg('inventory.html')}</span><span><strong>${toPack}</strong> orders to pack<small>Pending, confirmed, or processing</small><b>Open order queue →</b></span></a>
+		<a class="admin-fulfillment-row" href="deliveries.html?status=shipped"><span class="admin-fulfillment-icon is-dispatch">${adminIconSvg('deliveries.html')}</span><span><strong>${dispatch}</strong> ready for dispatch<small>Orders marked shipped</small><b>Prepare dispatch →</b></span></a>
+		<div class="admin-fulfillment-delivered">${adminIconSvg('delivered')}<span>${delivered} orders delivered today</span></div>`;
+}
+
+function renderLowStock(products) {
+	adminQuery('#low-stock-count').textContent = `${products.length} items`;
+	adminQuery('#dashboard-low-stock').innerHTML = products.length ? products.map(product => {
+		const threshold = Math.max(1, Number(product.reorder_threshold) || LOW_STOCK_LIMIT);
+		const stock = Math.max(0, Number(product.stock) || 0);
+		const percent = Math.min(100, stock / threshold * 100);
+		const category = product.category || 'Product';
+		return `<article class="admin-low-stock-item">${adminProductImage(product)}<span class="admin-low-stock-info"><strong>${adminEscape(product.name)}</strong><small>${adminEscape(category)} · Reorder at ${threshold}</small><span class="admin-stock-track"><i style="width:${percent}%"></i></span></span><b>${adminEscape(stock)} units</b></article>`;
+	}).join('') : '<p class="admin-empty">No active products are below the reorder threshold.</p>';
 }
 
 function renderSalesChart(target, sales) {
@@ -424,6 +671,7 @@ async function loadProducts() {
 	const [products, categoryData] = await Promise.all([getAllProducts(), adminRequest('/categories')]);
 	adminState.products = products;
 	adminState.categories = categoryData.categories || [];
+	applyPageSearch('#product-search');
 	adminQuery('#product-category').innerHTML = '<option value="">Uncategorized</option>' + adminState.categories.map(category =>
 		`<option value="${adminEscape(category.id)}">${adminEscape(category.name)}</option>`
 	).join('');
@@ -513,7 +761,9 @@ function renderOrders() {
 	const status = adminQuery('#order-filter').value;
 	const orders = adminState.orders.filter(order => {
 		const matchesQuery = `#${order.id} ${order.user_id} ${order.customer?.name || ''} ${order.customer?.email || ''}`.toLowerCase().includes(query);
-		return matchesQuery && (status === 'all' || order.status === status);
+		const matchesStatus = status === 'all' || order.status === status;
+		const isDeliveryOrder = adminPage !== 'deliveries' || order.status !== 'cancelled';
+		return matchesQuery && matchesStatus && isDeliveryOrder;
 	});
 	const visible = slicePage(orders, adminPages.orders);
 	adminQuery('#order-rows').innerHTML = visible.length ? visible.map(order => {
@@ -525,11 +775,89 @@ function renderOrders() {
 }
 
 async function loadOrders() {
+	applyPageSearch('#order-search');
 	const data = await adminRequest('/admin/orders');
 	adminState.orders = data.orders || [];
-	const requestedStatus = new URLSearchParams(location.search).get('status');
+	const params = new URLSearchParams(location.search);
+	const requestedStatus = params.get('status');
 	if (requestedStatus && ORDER_STATUSES.includes(requestedStatus)) adminQuery('#order-filter').value = requestedStatus;
+	if (params.has('search')) adminQuery('#order-search').value = params.get('search');
 	renderOrders();
+}
+
+function addCreateOrderItem() {
+	const target = adminQuery('#create-order-items');
+	if (target.children.length >= 50) return;
+	const products = adminState.products.filter(product => product.is_active);
+	const row = document.createElement('div');
+	row.className = 'admin-create-order-item';
+	row.innerHTML = `<select name="product_id" aria-label="Product" required><option value="">Select a product</option>${products.map(product => `<option value="${adminEscape(product.id)}">${adminEscape(product.name)} · ${adminMoney(product.price)} · ${adminEscape(product.stock)} in stock</option>`).join('')}</select><input name="quantity" type="number" min="1" step="1" value="1" aria-label="Quantity" required><button type="button" class="admin-link-button" aria-label="Remove item" data-remove-order-item>Remove</button>`;
+	target.append(row);
+	updateOrderItemControls();
+	adminQuery('[data-add-order-item]').disabled = target.children.length >= 50;
+}
+
+function updateOrderItemControls() {
+	const rows = adminQueryAll('#create-order-items .admin-create-order-item');
+	rows.forEach(row => {
+		const remove = row.querySelector('[data-remove-order-item]');
+		remove.hidden = rows.length === 1;
+	});
+}
+
+async function openCreateOrderDialog() {
+	const dialog = adminQuery('#create-order-dialog');
+	const form = adminQuery('#create-order-form');
+	if (!dialog || !form) return;
+	form.reset();
+	adminQuery('#create-order-error').textContent = '';
+	adminQuery('#create-order-items').innerHTML = '<div class="admin-loading" role="status">Loading customers and products…</div>';
+	dialog.showModal();
+	try {
+		const [customerData, products] = await Promise.all([
+			adminRequest('/admin/users?role=customer'),
+			getAllProducts()
+		]);
+		adminState.products = products;
+		const customers = customerData.users || [];
+		adminQuery('#create-order-customer').innerHTML = '<option value="">Select a customer</option>' + customers.map(customer =>
+			`<option value="${adminEscape(customer.id)}">${adminEscape(customer.name)} · ${adminEscape(customer.email)}</option>`
+		).join('');
+		adminQuery('#create-order-items').innerHTML = '';
+		addCreateOrderItem();
+		if (!customers.length) adminQuery('#create-order-error').textContent = 'Create a customer account before placing an order.';
+		if (!products.some(product => product.is_active)) adminQuery('#create-order-error').textContent = 'There are no active products available to order.';
+	} catch (error) {
+		adminQuery('#create-order-items').innerHTML = '';
+		adminQuery('#create-order-error').textContent = error.message;
+	}
+}
+
+async function saveAdminOrder(event) {
+	event.preventDefault();
+	const form = event.currentTarget;
+	if (!form.reportValidity()) return;
+	const items = [...adminQuery('#create-order-items').querySelectorAll('.admin-create-order-item')].map(row => ({
+		product_id: Number(row.querySelector('[name="product_id"]').value),
+		quantity: Number(row.querySelector('[name="quantity"]').value)
+	}));
+	const submit = form.querySelector('[type="submit"]');
+	submit.disabled = true;
+	adminQuery('#create-order-error').textContent = '';
+	try {
+		const data = await adminRequest('/admin/orders', 'POST', {
+			customer_id: Number(form.elements.customer_id.value),
+			shipping_address: form.elements.shipping_address.value.trim(),
+			items
+		});
+		adminQuery('#create-order-dialog').close();
+		await loadOrders();
+		showAdminToast(`Order #${data.order.id} created. Payment is pending cash on delivery.`);
+	} catch (error) {
+		adminQuery('#create-order-error').textContent = error.message;
+	} finally {
+		submit.disabled = false;
+	}
 }
 
 async function saveOrderStatus(orderId) {
@@ -541,6 +869,112 @@ async function saveOrderStatus(orderId) {
 		await loadOrders();
 		showAdminError('');
 		showAdminToast(`Order #${orderId} status updated.`);
+	} catch (error) {
+		showAdminError(error.message);
+	}
+}
+
+function localDateTimeInput(value) {
+	if (!value) return '';
+	const date = new Date(value);
+	if (Number.isNaN(date.getTime())) return '';
+	const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+	return local.toISOString().slice(0, 16);
+}
+
+function openDiscountDialog(discount = null) {
+	const form = adminQuery('#discount-form');
+	form.reset();
+	form.elements.id.value = discount?.id || '';
+	form.elements.code.value = discount?.code || '';
+	form.elements.name.value = discount?.name || '';
+	form.elements.discount_type.value = discount?.discount_type || 'percentage';
+	form.elements.value.value = discount?.value ?? '';
+	form.elements.starts_at.value = localDateTimeInput(discount?.starts_at);
+	form.elements.expires_at.value = localDateTimeInput(discount?.expires_at);
+	form.elements.is_active.checked = discount ? Boolean(discount.is_active) : true;
+	adminQuery('#discount-dialog-title').textContent = discount ? 'Edit discount' : 'Create discount';
+	adminQuery('#discount-form-error').textContent = '';
+	adminQuery('#discount-dialog').showModal();
+}
+
+function discountStatus(discount) {
+	if (!discount.is_active) return 'inactive';
+	const now = Date.now();
+	if (discount.starts_at && new Date(discount.starts_at).getTime() > now) return 'scheduled';
+	if (discount.expires_at && new Date(discount.expires_at).getTime() < now) return 'expired';
+	return 'active';
+}
+
+function renderDiscounts() {
+	const query = adminQuery('#discount-search').value.trim().toLowerCase();
+	const filter = adminQuery('#discount-status-filter').value;
+	const discounts = adminState.discounts.filter(discount => {
+		const matchesQuery = `${discount.code} ${discount.name}`.toLowerCase().includes(query);
+		const status = discountStatus(discount);
+		return matchesQuery && (filter === 'all' || (filter === 'active' ? status === 'active' : status !== 'active'));
+	});
+	adminQuery('#discount-rows').innerHTML = discounts.length ? discounts.map(discount => {
+		const schedule = [discount.starts_at ? `Starts ${adminDateTime(discount.starts_at)}` : 'Starts now', discount.expires_at ? `Ends ${adminDateTime(discount.expires_at)}` : 'No expiry'].join('<br>');
+		const amount = discount.discount_type === 'percentage' ? `${Number(discount.value)}%` : adminMoney(discount.value);
+		return `<tr><td><strong>${adminEscape(discount.code)}</strong></td><td>${adminEscape(discount.name)}</td><td>${adminEscape(amount)} ${discount.discount_type === 'percentage' ? 'off' : 'discount'}</td><td>${schedule}</td><td>${statusPill(discountStatus(discount))}</td><td><div class="admin-row-actions"><button class="btn btn-outline" type="button" data-discount-edit="${adminEscape(discount.id)}">Edit</button><button class="btn btn-outline" type="button" data-discount-toggle="${adminEscape(discount.id)}">${discount.is_active ? 'Deactivate' : 'Activate'}</button><button class="btn btn-outline" type="button" data-discount-delete="${adminEscape(discount.id)}">Delete</button></div></td></tr>`;
+	}).join('') : adminEmptyRow(6, 'No matching discounts.');
+}
+
+async function loadDiscounts() {
+	const data = await adminRequest('/admin/discounts');
+	adminState.discounts = data.discounts || [];
+	renderDiscounts();
+}
+
+async function saveDiscount(event) {
+	event.preventDefault();
+	const form = event.currentTarget;
+	if (!form.reportValidity()) return;
+	const id = form.elements.id.value;
+	const payload = {
+		code: form.elements.code.value.trim().toUpperCase(),
+		name: form.elements.name.value.trim(),
+		discount_type: form.elements.discount_type.value,
+		value: Number(form.elements.value.value),
+		starts_at: form.elements.starts_at.value || null,
+		expires_at: form.elements.expires_at.value || null,
+		is_active: form.elements.is_active.checked
+	};
+	const submit = form.querySelector('[type="submit"]');
+	submit.disabled = true;
+	adminQuery('#discount-form-error').textContent = '';
+	try {
+		await adminRequest(id ? `/admin/discounts/${id}` : '/admin/discounts', id ? 'PATCH' : 'POST', payload);
+		adminQuery('#discount-dialog').close();
+		await loadDiscounts();
+		showAdminToast(id ? 'Discount updated.' : 'Discount created.');
+	} catch (error) {
+		adminQuery('#discount-form-error').textContent = error.message;
+	} finally {
+		submit.disabled = false;
+	}
+}
+
+async function toggleDiscount(id) {
+	const discount = adminState.discounts.find(item => item.id === Number(id));
+	if (!discount) return;
+	try {
+		await adminRequest(`/admin/discounts/${id}`, 'PATCH', { is_active: !discount.is_active });
+		await loadDiscounts();
+		showAdminToast(`Discount ${discount.is_active ? 'deactivated' : 'activated'}.`);
+	} catch (error) {
+		showAdminError(error.message);
+	}
+}
+
+async function deleteDiscount(id) {
+	const discount = adminState.discounts.find(item => item.id === Number(id));
+	if (!discount || !window.confirm(`Delete discount ${discount.code}?`)) return;
+	try {
+		await adminRequest(`/admin/discounts/${id}`, 'DELETE');
+		await loadDiscounts();
+		showAdminToast('Discount deleted.');
 	} catch (error) {
 		showAdminError(error.message);
 	}
@@ -583,7 +1017,7 @@ function renderInventory() {
 	const visible = slicePage(rows, adminPages.inventory);
 	adminQuery('#inventory-rows').innerHTML = visible.length ? visible.map(item => {
 		const quantity = Number(item.quantity);
-		return `<tr class="${quantity <= LOW_STOCK_LIMIT ? 'admin-low-stock-row' : ''}"><td><b>${adminEscape(item.product_name)}</b></td><td>#${adminEscape(item.product_id)}</td><td>${statusPill(quantity <= LOW_STOCK_LIMIT ? 'low stock' : 'in stock')}</td><td><strong>${adminEscape(quantity)}</strong></td><td><form class="admin-inline-form" data-inventory-form="${adminEscape(item.product_id)}"><input aria-label="New stock for ${adminEscape(item.product_name)}" type="number" name="quantity" min="0" step="1" value="${adminEscape(quantity)}" required><button class="btn btn-outline" type="submit">Save</button></form></td></tr>`;
+		return `<tr class="${quantity <= LOW_STOCK_LIMIT ? 'admin-low-stock-row' : ''}"><td><b>${adminEscape(item.product_name)}</b></td><td>#${adminEscape(item.product_id)}</td><td>${statusPill(quantity <= LOW_STOCK_LIMIT ? 'low stock' : 'in stock')}</td><td><strong>${adminEscape(quantity)}</strong></td><td><form class="admin-inline-form" data-inventory-form="${adminEscape(item.product_id)}"><select name="operation" data-inventory-operation aria-label="Stock action for ${adminEscape(item.product_name)}"><option value="set">Set stock to</option><option value="stock_in">Stock in</option><option value="stock_out">Stock out</option></select><input aria-label="Quantity for ${adminEscape(item.product_name)}" type="number" name="quantity" min="0" step="1" value="${adminEscape(quantity)}" required><button class="btn btn-outline" type="submit">Apply</button><button class="admin-link-button" type="button" data-inventory-history="${adminEscape(item.product_id)}">History</button></form></td></tr>`;
 	}).join('') : adminEmptyRow(5, 'No matching inventory records.');
 	renderPagination(adminQuery('#inventory-pagination'), adminPages.inventory, rows.length, 'inventory');
 }
@@ -594,6 +1028,25 @@ async function loadInventory() {
 	const productId = new URLSearchParams(location.search).get('product');
 	if (productId && /^\d+$/.test(productId)) adminQuery('#inventory-search').value = productId;
 	renderInventory();
+}
+
+async function showInventoryHistory(productId) {
+	const product = adminState.inventory.find(item => item.product_id === Number(productId));
+	const dialog = adminQuery('#inventory-history-dialog');
+	const content = adminQuery('#inventory-history-content');
+	if (!dialog || !content || !product) return;
+	content.innerHTML = `<p class="eyebrow">Inventory history</p><h2>${adminEscape(product.product_name)}</h2><p class="admin-muted">Recent administrator stock adjustments.</p><div class="admin-loading" role="status">Loading stock history…</div>`;
+	dialog.showModal();
+	try {
+		const data = await adminRequest(`/inventory/${productId}/history`);
+		const entries = data.history || [];
+		const history = entries.length ? entries.map(entry =>
+			`<div class="admin-detail-row"><span>${adminEscape(entry.description)}<small>Admin #${adminEscape(entry.admin_user_id || '—')}</small></span><time>${adminEscape(adminDateTime(entry.created_at))}</time></div>`
+		).join('') : '<p class="admin-empty">No administrator stock adjustments have been recorded.</p>';
+		content.innerHTML = `<p class="eyebrow">Inventory history</p><h2>${adminEscape(product.product_name)}</h2>${history}`;
+	} catch (error) {
+		content.innerHTML = `<div class="admin-alert" role="alert">${adminEscape(error.message)}</div>`;
+	}
 }
 
 function renderCustomers() {
@@ -607,6 +1060,7 @@ function renderCustomers() {
 }
 
 async function loadCustomers() {
+	applyPageSearch('#customer-search');
 	const role = adminQuery('#customer-role-filter').value;
 	const params = new URLSearchParams();
 	if (role !== 'all') params.set('role', role);
@@ -646,9 +1100,42 @@ async function loadProfile() {
 	document.querySelectorAll('[data-admin-greeting]').forEach(element => {
 		element.textContent = `Signed in as ${data.user.name}`;
 	});
+	const profileName = adminQuery('[data-admin-profile-name]');
+	if (profileName) profileName.textContent = data.user.name;
+	const avatar = adminQuery('[data-admin-avatar]');
+	if (avatar) avatar.textContent = data.user.name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase();
+	document.querySelectorAll('[data-store-status]').forEach(element => { element.textContent = 'Online'; });
 	if (adminPage === 'account') {
 		adminQuery('#admin-profile-name').value = data.user.name;
 		adminQuery('#admin-profile-email').value = data.user.email;
+	}
+}
+
+async function loadAdminPreferences() {
+	const data = await adminRequest('/users/me/preferences');
+	const form = adminQuery('#admin-notification-form');
+	if (!form) return;
+	for (const [field, enabled] of Object.entries(data.preferences || {})) {
+		const input = form.elements.namedItem(field);
+		if (input) input.checked = Boolean(enabled);
+	}
+}
+
+async function saveAdminPreferences(event) {
+	event.preventDefault();
+	const form = event.currentTarget;
+	const submit = form.querySelector('[type="submit"]');
+	submit.disabled = true;
+	adminQuery('#admin-notification-error').textContent = '';
+	try {
+		const fields = ['email_order_updates', 'email_promotions', 'sms_order_updates', 'sms_promotions'];
+		const preferences = Object.fromEntries(fields.map(field => [field, form.elements.namedItem(field).checked]));
+		await adminRequest('/users/me/preferences', 'PATCH', preferences);
+		showAdminToast('Notification preferences saved.');
+	} catch (error) {
+		adminQuery('#admin-notification-error').textContent = error.message;
+	} finally {
+		submit.disabled = false;
 	}
 }
 
@@ -756,14 +1243,19 @@ async function refreshAdminPage() {
 		await loadProfile();
 		if (adminPage === 'dashboard') await loadDashboard();
 		if (adminPage === 'products') await loadProducts();
-		if (adminPage === 'orders') await loadOrders();
+		if (adminPage === 'orders' || adminPage === 'deliveries') await loadOrders();
 		if (adminPage === 'orders') {
 			const orderId = new URLSearchParams(location.search).get('order');
 			if (orderId && /^\d+$/.test(orderId)) await showOrderDetails(orderId);
+			if (new URLSearchParams(location.search).get('create') === '1') {
+				openCreateOrderDialog().catch(error => showAdminError(error.message));
+			}
 		}
 		if (adminPage === 'inventory') await loadInventory();
 		if (adminPage === 'customers') await loadCustomers();
 		if (adminPage === 'reports') await loadReports();
+		if (adminPage === 'discounts') await loadDiscounts();
+		if (adminPage === 'account') await loadAdminPreferences();
 		if (adminPage === 'messages') {
 			await loadAdminConversations();
 			if (activeConversationId) await loadAdminConversation(activeConversationId);
@@ -818,6 +1310,7 @@ document.addEventListener('click', event => {
 	const saveOrder = target.closest('[data-order-save]');
 	const orderDetails = target.closest('[data-order-details]');
 	const customerHistory = target.closest('[data-customer-history]');
+	const inventoryHistory = target.closest('[data-inventory-history]');
 	const pageButton = target.closest('[data-page-kind]');
 	if (edit) openProductDialog(adminState.products.find(product => product.id === Number(edit.dataset.productEdit)));
 	if (toggle) toggleProduct(toggle.dataset.productToggle);
@@ -825,6 +1318,7 @@ document.addEventListener('click', event => {
 	if (saveOrder) saveOrderStatus(saveOrder.dataset.orderSave);
 	if (orderDetails) showOrderDetails(orderDetails.dataset.orderDetails);
 	if (customerHistory) showCustomerHistory(customerHistory.dataset.customerHistory);
+	if (inventoryHistory) showInventoryHistory(inventoryHistory.dataset.inventoryHistory);
 	if (pageButton && !pageButton.disabled) {
 		const kind = pageButton.dataset.pageKind;
 		adminPages[kind] = Number(pageButton.dataset.page);
@@ -834,6 +1328,33 @@ document.addEventListener('click', event => {
 		if (kind === 'customers') renderCustomers();
 	}
 	if (target.closest('[data-dialog-close]')) target.closest('dialog').close();
+	if (target.closest('[data-create-order]')) openCreateOrderDialog().catch(error => showAdminError(error.message));
+	if (target.closest('[data-create-order-close]')) adminQuery('#create-order-dialog')?.close();
+	if (target.closest('[data-add-order-item]')) addCreateOrderItem();
+	if (target.closest('[data-remove-order-item]')) {
+		const rows = adminQueryAll('#create-order-items .admin-create-order-item');
+		if (rows.length > 1) {
+			target.closest('.admin-create-order-item').remove();
+			updateOrderItemControls();
+			adminQuery('[data-add-order-item]').disabled = false;
+		}
+	}
+	if (target.closest('[data-discount-create]')) openDiscountDialog();
+	if (target.closest('[data-discount-cancel]')) adminQuery('#discount-dialog')?.close();
+	const discountEdit = target.closest('[data-discount-edit]');
+	const discountToggle = target.closest('[data-discount-toggle]');
+	const discountDelete = target.closest('[data-discount-delete]');
+	if (discountEdit) openDiscountDialog(adminState.discounts.find(item => item.id === Number(discountEdit.dataset.discountEdit)));
+	if (discountToggle) toggleDiscount(discountToggle.dataset.discountToggle);
+	if (discountDelete) deleteDiscount(discountDelete.dataset.discountDelete);
+	if (target.closest('[data-export-report]')) exportDashboardReport();
+});
+
+document.addEventListener('change', event => {
+	if (!event.target.matches('[data-inventory-operation]')) return;
+	const quantity = event.target.closest('form').elements.quantity;
+	quantity.min = event.target.value === 'set' ? '0' : '1';
+	if (Number(quantity.value) < Number(quantity.min)) quantity.value = quantity.min;
 });
 
 document.addEventListener('submit', async event => {
@@ -851,6 +1372,18 @@ document.addEventListener('submit', async event => {
 	}
 	if (event.target.id === 'admin-password-form') {
 		savePassword(event);
+		return;
+	}
+	if (event.target.id === 'admin-notification-form') {
+		saveAdminPreferences(event);
+		return;
+	}
+	if (event.target.id === 'create-order-form') {
+		saveAdminOrder(event);
+		return;
+	}
+	if (event.target.id === 'discount-form') {
+		saveDiscount(event);
 		return;
 	}
 	if (event.target.id === 'reports-filter') {
@@ -872,18 +1405,20 @@ document.addEventListener('submit', async event => {
 		const form = event.target;
 		if (!form.reportValidity()) return;
 		const productId = form.dataset.inventoryForm;
-		const quantity = Number(new FormData(form).get('quantity'));
-		if (!Number.isSafeInteger(quantity) || quantity < 0) {
-			showAdminError('Stock must be a whole number zero or greater.');
+		const formData = new FormData(form);
+		const quantity = Number(formData.get('quantity'));
+		const operation = String(formData.get('operation'));
+		if (!Number.isSafeInteger(quantity) || quantity < 0 || (operation !== 'set' && quantity === 0)) {
+			showAdminError('Enter a whole number greater than zero for stock in/out, or zero when setting stock.');
 			return;
 		}
 		const button = form.querySelector('button');
 		button.disabled = true;
 		try {
-			await adminRequest(`/inventory/${productId}`, 'PATCH', { quantity });
+			await adminRequest(`/inventory/${productId}`, 'PATCH', { operation, quantity });
 			await loadInventory();
 			showAdminError('');
-			showAdminToast('Inventory updated.');
+			showAdminToast(operation === 'stock_in' ? 'Stock received.' : operation === 'stock_out' ? 'Stock removed.' : 'Inventory updated.');
 		} catch (error) {
 			showAdminError(error.message);
 		} finally {
@@ -899,6 +1434,9 @@ adminQuery('#product-filter')?.addEventListener('change', () => { adminPages.pro
 adminQuery('#product-category-filter')?.addEventListener('change', () => { adminPages.products = 1; renderProducts(); });
 adminQuery('#order-search')?.addEventListener('input', () => { adminPages.orders = 1; renderOrders(); });
 adminQuery('#order-filter')?.addEventListener('change', () => { adminPages.orders = 1; renderOrders(); });
+adminQuery('#dashboard-period')?.addEventListener('change', () => loadDashboard().catch(error => showAdminError(error.message)));
+adminQuery('#discount-search')?.addEventListener('input', renderDiscounts);
+adminQuery('#discount-status-filter')?.addEventListener('change', renderDiscounts);
 adminQuery('#inventory-search')?.addEventListener('input', () => { adminPages.inventory = 1; renderInventory(); });
 adminQuery('#inventory-filter')?.addEventListener('change', () => { adminPages.inventory = 1; renderInventory(); });
 adminQuery('#customer-search')?.addEventListener('input', () => {

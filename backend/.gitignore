@@ -4,3 +4,6 @@ migrations/*
 !migrations/versions/
 migrations/versions/*
 !migrations/versions/*.py
+!models/
+models/*
+!models/discount.py

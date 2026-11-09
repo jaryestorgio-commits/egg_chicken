@@ -12,9 +12,10 @@ from .audit_log import AuditLog
 from .token_blocklist import TokenBlocklist
 from .chat_message import ChatMessage
 from .admin_notification import AdminNotification, AdminNotificationRead
+from .discount import Discount
 
 __all__ = [
 	"User", "Category", "Product", "Cart", "CartItem", "Order",
 	"OrderItem", "Payment", "Address", "Inventory", "AuditLog", "TokenBlocklist",
-	"ChatMessage", "AdminNotification", "AdminNotificationRead",
+	"ChatMessage", "AdminNotification", "AdminNotificationRead", "Discount",
 ]

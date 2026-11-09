@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 from extensions import db
-from models import Order, OrderItem, Payment, Product, User
+from models import Discount, Order, OrderItem, Payment, Product, User
 
 
 def create_user(client, app, email, role):
@@ -108,6 +109,7 @@ def test_customer_cannot_access_or_change_admin_data(client, app):
         client.get("/api/v1/admin/orders", headers=headers),
         client.get(f"/api/v1/admin/users/{customer_id}/orders", headers=headers),
         client.get("/api/v1/inventory", headers=headers),
+        client.get(f"/api/v1/inventory/{product_id}/history", headers=headers),
         client.patch(f"/api/v1/inventory/{product_id}", json={"quantity": 2}, headers=headers),
         client.patch("/api/v1/admin/orders/1/status", json={"status": "shipped"}, headers=headers),
         client.post("/api/v1/products", json={"name": "Unauthorized", "price": 1}, headers=headers),
@@ -166,6 +168,42 @@ def test_admin_inventory_and_order_updates_preserve_payment_workflow(client, app
     assert history.get_json()["data"]["history"][0]["description"] == f"Order {order_id}: processing -> shipped"
 
 
+def test_admin_inventory_stock_in_out_and_history(client, app):
+    admin_token, _ = create_user(client, app, "stock-admin@example.com", "admin")
+    _, customer_id = create_user(client, app, "stock-customer@example.com", "customer")
+    product_id, _ = create_admin_order(app, customer_id)
+    headers = auth_headers(admin_token)
+
+    stock_in = client.patch(
+        f"/api/v1/inventory/{product_id}",
+        json={"operation": "stock_in", "quantity": 5},
+        headers=headers,
+    )
+    stock_out = client.patch(
+        f"/api/v1/inventory/{product_id}",
+        json={"operation": "stock_out", "quantity": 3},
+        headers=headers,
+    )
+    invalid_stock_out = client.patch(
+        f"/api/v1/inventory/{product_id}",
+        json={"operation": "stock_out", "quantity": 11},
+        headers=headers,
+    )
+    history = client.get(
+        f"/api/v1/inventory/{product_id}/history",
+        headers=headers,
+    )
+
+    assert stock_in.status_code == 200
+    assert stock_in.get_json()["data"]["inventory"]["quantity"] == 13
+    assert stock_out.status_code == 200
+    assert stock_out.get_json()["data"]["inventory"]["quantity"] == 10
+    assert invalid_stock_out.status_code == 409
+    history_rows = history.get_json()["data"]["history"]
+    assert len(history_rows) == 2
+    assert "Stock out (13 -> 10)" in history_rows[0]["description"]
+
+
 def test_admin_reports_aggregate_live_paid_sales_and_order_items(client, app):
     admin_token, _ = create_user(client, app, "reports-admin@example.com", "admin")
     _, customer_id = create_user(client, app, "reports-customer@example.com", "customer")
@@ -222,3 +260,103 @@ def test_admin_reports_validate_dates_and_require_admin_role(client, app):
     assert invalid.status_code == 422
     assert reversed_range.status_code == 422
     assert forbidden.status_code == 403
+
+
+def test_admin_dashboard_reports_sales_by_selected_store_date_range(client, app):
+    admin_token, _ = create_user(client, app, "dashboard-range-admin@example.com", "admin")
+    _, customer_id = create_user(client, app, "dashboard-range-customer@example.com", "customer")
+    product_id, order_id = create_admin_order(app, customer_id)
+
+    with app.app_context():
+        db.session.add(OrderItem(
+            order_id=order_id,
+            product_id=product_id,
+            quantity=3,
+            unit_price=12.5,
+            subtotal=37.5,
+        ))
+        db.session.commit()
+
+    today = datetime.now(timezone.utc).astimezone(ZoneInfo("Asia/Manila")).date()
+    response = client.get(
+        f"/api/v1/admin/dashboard?start_date={today.isoformat()}&end_date={today.isoformat()}",
+        headers=auth_headers(admin_token),
+    )
+
+    assert response.status_code == 200
+    data = response.get_json()["data"]
+    assert data["sales_period"]["gross_sales"] == 37.5
+    assert data["eggs_sold"] == 3
+    assert data["eggs_sales"] == 37.5
+    assert data["sales_by_day"][0]["gross_sales"] == 37.5
+
+
+def test_admin_can_create_order_with_stock_reservation_and_pending_payment(client, app):
+    admin_token, _ = create_user(client, app, "create-order-admin@example.com", "admin")
+    _, customer_id = create_user(client, app, "create-order-customer@example.com", "customer")
+    product_id, _ = create_admin_order(app, customer_id)
+
+    response = client.post(
+        "/api/v1/admin/orders",
+        json={
+            "customer_id": customer_id,
+            "shipping_address": "20 Fresh Farm Road",
+            "items": [{"product_id": product_id, "quantity": 2}],
+        },
+        headers=auth_headers(admin_token),
+    )
+
+    assert response.status_code == 201
+    order = response.get_json()["data"]["order"]
+    assert order["status"] == "pending"
+    assert order["total_amount"] == 75
+    assert order["payments"][0]["payment_method"] == "cash_on_delivery"
+    assert order["payments"][0]["payment_status"] == "pending"
+    with app.app_context():
+        assert db.session.get(Product, product_id).stock == 6
+
+
+def test_admin_discount_crud_validates_values_and_requires_admin(client, app):
+    admin_token, _ = create_user(client, app, "discount-admin@example.com", "admin")
+    customer_token, _ = create_user(client, app, "discount-customer@example.com", "customer")
+    headers = auth_headers(admin_token)
+    create_response = client.post(
+        "/api/v1/admin/discounts",
+        json={
+            "code": "FRESH10",
+            "name": "Fresh produce discount",
+            "discount_type": "percentage",
+            "value": 10,
+        },
+        headers=headers,
+    )
+
+    assert create_response.status_code == 201
+    discount_id = create_response.get_json()["data"]["discount"]["id"]
+    updated = client.patch(
+        f"/api/v1/admin/discounts/{discount_id}",
+        json={"is_active": False},
+        headers=headers,
+    )
+    invalid = client.post(
+        "/api/v1/admin/discounts",
+        json={
+            "code": "TOOMUCH",
+            "name": "Invalid percent",
+            "discount_type": "percentage",
+            "value": 101,
+        },
+        headers=headers,
+    )
+    forbidden = client.get(
+        "/api/v1/admin/discounts",
+        headers=auth_headers(customer_token),
+    )
+
+    assert updated.status_code == 200
+    assert updated.get_json()["data"]["discount"]["is_active"] is False
+    assert invalid.status_code == 422
+    assert forbidden.status_code == 403
+    assert client.delete(f"/api/v1/admin/discounts/{discount_id}", headers=headers).status_code == 200
+    with app.app_context():
+        assert db.session.get(Discount, discount_id) is None
