@@ -236,19 +236,21 @@ async function initProfile(){
   const requestedView = new URLSearchParams(location.search).get('view');
   const availableViews = new Set(['dashboard', 'profile-details', 'orders', 'tracking', 'wishlist', 'addresses', 'payment-methods', 'notifications', 'settings']);
   const initialView = availableViews.has(requestedView) ? requestedView : 'dashboard';
+  const hideAccountPageHeading = () => { $('.account-heading').hidden = true; };
+  hideAccountPageHeading();
   document.querySelectorAll('.account-view').forEach(view => { view.hidden = view.dataset.view !== initialView; });
   document.querySelectorAll('.side [data-account-view]').forEach(button => button.classList.toggle('on', button.dataset.accountView === initialView));
 
   const viewHeadings = {
-    dashboard: ['Dashboard', 'A clear view of your orders, saved products, and delivery details.'],
-    'profile-details': ['Personal Information', 'Review and update the details connected to your account.'],
+    dashboard: ['Your Activity', 'Recent orders, delivery updates, and saved items from your account.'],
+    'profile-details': ['Profile Details', 'Review and update the details connected to your account.'],
     orders: ['My Orders', 'Review your customer order history.'],
     tracking: ['Order Tracking', 'Follow the latest status of your orders.'],
     wishlist: ['Wishlist', 'Find the products you have saved for later.'],
     addresses: ['Delivery Addresses', 'Manage the delivery addresses saved to your account.'],
     'payment-methods': ['Payment Methods', 'Review how payment information is handled at checkout.'],
     notifications: ['Notification Preferences', 'Choose which email and SMS updates you receive.'],
-    settings: ['Password & Security', 'Keep your account secure by updating your password.']
+    settings: ['Settings', 'Manage the account and app settings currently available to you.']
   };
   const initialHeading = viewHeadings[initialView];
   $('#account-page-title').textContent = initialHeading[0];
@@ -257,6 +259,7 @@ async function initProfile(){
   document.querySelectorAll('[data-account-view]').forEach(button => {
     button.addEventListener('click', () => {
       const viewName = button.dataset.accountView;
+      hideAccountPageHeading();
       document.querySelectorAll('.account-view').forEach(view => { view.hidden = view.dataset.view !== viewName; });
       document.querySelectorAll('.side [data-account-view]').forEach(link => link.classList.toggle('on', link.dataset.accountView === viewName));
       const heading = viewHeadings[viewName];
@@ -278,6 +281,11 @@ async function initProfile(){
       if (viewName === 'addresses' && !accountAddressesLoaded) loadAccountAddresses();
       if (viewName === 'notifications' && !accountNotificationPreferencesLoaded) loadNotificationPreferences();
       if (viewName === 'wishlist' || viewName === 'dashboard') loadAccountWishlist();
+      if (button.dataset.settingsFocus) {
+        const target = $(`#${button.dataset.settingsFocus}`);
+        target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        $('#current-password').focus({ preventScroll: true });
+      }
     });
   });
   if (initialView === 'notifications') loadNotificationPreferences();
@@ -312,6 +320,16 @@ async function initProfile(){
     $('#profile-birthday-value').textContent = birthday && !Number.isNaN(birthday.getTime())
       ? new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'long', day: 'numeric' }).format(birthday)
       : 'Not provided';
+    const age = birthday && !Number.isNaN(birthday.getTime())
+      ? (() => {
+        const today = new Date();
+        let years = today.getFullYear() - birthday.getFullYear();
+        if (today.getMonth() < birthday.getMonth() || (today.getMonth() === birthday.getMonth() && today.getDate() < birthday.getDate())) years--;
+        return years;
+      })()
+      : null;
+    $('#profile-age-value').textContent = age === null ? 'Not available' : String(age);
+    $('#profile-gender-value').textContent = user.gender || 'Not provided';
     $('#profile-role-value').textContent = String(user.role || 'customer').replace(/^\w/, letter => letter.toUpperCase());
     const joined = user.created_at ? new Date(user.created_at) : null;
     $('#profile-joined-value').textContent = joined && !Number.isNaN(joined.getTime())

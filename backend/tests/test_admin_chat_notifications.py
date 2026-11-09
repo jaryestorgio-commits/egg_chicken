@@ -81,6 +81,50 @@ def test_customer_chat_admin_reply_unread_counts_and_notification(client, app):
     assert data["notifications"][0]["href"] == f"messages.html?customer={customer_id}"
 
 
+def test_customer_can_only_delete_their_own_chat_messages(client, app):
+    customer_token = _register_customer(client, "delete-customer@example.com")
+    other_customer_token = _register_customer(client, "other-delete-customer@example.com")
+    admin_token = _create_admin(client, app)
+    customer_headers = _headers(customer_token)
+    other_customer_headers = _headers(other_customer_token)
+    admin_headers = _headers(admin_token)
+
+    own_message = client.post(
+        "/api/v1/chat/messages",
+        json={"message": "Please remove this message."},
+        headers=customer_headers,
+    ).get_json()["data"]["message"]
+    other_message = client.post(
+        "/api/v1/chat/messages",
+        json={"message": "This belongs to another customer."},
+        headers=other_customer_headers,
+    ).get_json()["data"]["message"]
+    admin_reply = client.post(
+        f"/api/v1/admin/chat/conversations/{own_message['customer_id']}/messages",
+        json={"message": "This is a support reply."},
+        headers=admin_headers,
+    ).get_json()["data"]["message"]
+
+    assert client.delete(
+        f"/api/v1/chat/messages/{other_message['id']}",
+        headers=customer_headers,
+    ).status_code == 404
+    assert client.delete(
+        f"/api/v1/chat/messages/{admin_reply['id']}",
+        headers=customer_headers,
+    ).status_code == 404
+    deleted = client.delete(
+        f"/api/v1/chat/messages/{own_message['id']}",
+        headers=customer_headers,
+    )
+    assert deleted.status_code == 200
+    remaining = client.get("/api/v1/chat/messages", headers=customer_headers)
+    assert all(
+        message["id"] != own_message["id"]
+        for message in remaining.get_json()["data"]["messages"]
+    )
+
+
 def test_order_low_stock_and_payment_events_create_readable_notifications(client, app):
     customer_token = _register_customer(client, "events-customer@example.com")
     admin_token = _create_admin(client, app)

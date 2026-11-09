@@ -11,49 +11,33 @@
     <div id="navbar"></div>
     <main id="main">
         <div class="wrap account-wrap">
-            <header class="account-heading">
-                <p class="eyebrow">Your farm-fresh account</p>
+            <header class="account-heading" hidden>
+                <p class="eyebrow">Your account</p>
                 <h1 id="account-page-title">Dashboard</h1>
                 <p id="account-page-description">A clear view of your orders, saved products, and delivery details.</p>
             </header>
-            <section class="account-hero" aria-label="Customer profile">
-                <div class="account-hero-person">
-                    <div class="account-photo-wrap">
-                        <div class="account-avatar" id="account-avatar" aria-hidden="true">EC</div>
-                        <img class="account-avatar-image" id="account-avatar-image" alt="Your profile picture" hidden>
-                        <button class="account-photo-change" id="change-profile-photo" type="button" aria-label="Change profile picture" title="Change profile picture">
-                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h3l1.5-2h7L17 7h3v12H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
-                        </button>
-                        <input id="profile-photo-input" type="file" accept="image/*" hidden>
-                    </div>
-                    <div class="account-hero-copy">
-                        <p class="account-hero-kicker">Welcome back</p>
-                        <h2 id="account-name">Loading your account…</h2>
-                        <p id="account-email"></p>
-                    </div>
-                </div>
-                <div class="account-hero-status"><span aria-hidden="true"></span><strong id="account-role">Customer</strong><small>Active account</small></div>
-            </section>
-            <p class="account-photo-error" id="profile-photo-error" role="alert" hidden></p>
             <div class="account">
                 <details class="account-nav">
                     <summary>Account menu <span aria-hidden="true">⌄</span></summary>
                     <nav class="side card" aria-label="Account">
                         <button class="on" type="button" data-account-view="dashboard"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="5" rx="1"/><rect x="13" y="10" width="8" height="11" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/></svg><span><strong>Dashboard</strong><small>Your store activity</small></span></button>
+                        <p class="account-nav-label">Profile details</p>
                         <button type="button" data-account-view="profile-details"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span><strong>Personal Information</strong><small>Your profile and contact details</small></span></button>
                         <button type="button" data-account-view="orders"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10a2 2 0 0 1 2 2v16l-7-4-7 4V5a2 2 0 0 1 2-2z"/><path d="M9 8h6M9 12h6"/></svg><span><strong>My Orders</strong><small>Order history</small></span></button>
                         <button type="button" data-account-view="tracking"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span><strong>Order Tracking</strong><small>Updates and delivery</small></span></button>
                         <button type="button" data-account-view="wishlist"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8z"/></svg><span><strong>Wishlist</strong><small>Your saved products</small></span></button>
                         <button type="button" data-account-view="addresses"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0z"/><circle cx="12" cy="10" r="2.5"/></svg><span><strong>Delivery Addresses</strong><small>Manage delivery destinations</small></span></button>
+                        <p class="account-nav-label">Settings</p>
                         <button type="button" data-account-view="payment-methods"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg><span><strong>Payment Methods</strong><small>Secure checkout options</small></span></button>
                         <button type="button" data-account-view="notifications"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span><strong>Notifications</strong><small>Email and SMS preferences</small></span></button>
-                        <button type="button" data-account-view="settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.7a8 8 0 0 1-1.6.9l-.3 1.8h-2.8l-.3-1.8a8 8 0 0 1-1.6-.9l-1.7.7-1.4-2.4 1.4-1.1a7 7 0 0 1 0-1.9l-1.4-1.1 1.4-2.4 1.7.7a8 8 0 0 1 1.6-.9l.3-1.8h2.8l.3 1.8a8 8 0 0 1 1.6.9l1.7-.7 1.4 2.4-1.4 1.1a7 7 0 0 1-.1 1.8z"/></svg><span><strong>Password &amp; Security</strong><small>Keep your account secure</small></span></button>
+                        <button type="button" data-account-view="settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.7a8 8 0 0 1-1.6.9l-.3 1.8h-2.8l-.3-1.8a8 8 0 0 1-1.6-.9l-1.7.7-1.4-2.4 1.4-1.1a7 7 0 0 1 0-1.9l-1.4-1.1 1.4-2.4 1.7.7a8 8 0 0 1 1.6-.9l.3-1.8h2.8l.3 1.8a8 8 0 0 1 1.6.9l1.7-.7 1.4 2.4-1.4 1.1a7 7 0 0 1-.1 1.8z"/></svg><span><strong>Settings</strong><small>Manage account preferences</small></span></button>
+                        <p class="account-nav-label">Logout</p>
                         <button class="account-logout" type="button" id="logout"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5M15 12H3"/><path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6"/></svg><span><strong>Logout</strong><small>Sign out of your account</small></span></button>
                     </nav>
                 </details>
                 <div class="account-content">
                     <section class="account-view" data-view="dashboard" aria-labelledby="dashboard-title">
-                        <div class="account-section-title account-view-heading"><div><p class="eyebrow">Your activity</p><h2 id="dashboard-title">Dashboard overview</h2></div></div>
+                        <div class="account-section-title account-view-heading"><div><p class="eyebrow">Dashboard</p><h2 id="dashboard-title">Your Activity</h2></div></div>
                         <div class="account-stat-grid" aria-label="Order and wishlist summary">
                             <article class="account-stat-card"><span class="account-stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h10a2 2 0 0 1 2 2v16l-7-4-7 4V5a2 2 0 0 1 2-2z"/><path d="M9 8h6M9 12h6"/></svg></span><span class="account-stat-copy"><small>Total orders</small><strong id="stat-total-orders">—</strong></span></article>
                             <article class="account-stat-card"><span class="account-stat-icon is-pending" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span class="account-stat-copy"><small>Pending orders</small><strong id="stat-pending-orders">—</strong></span></article>
@@ -78,15 +62,34 @@
                         </section>
                     </section>
                     <section class="account-view" data-view="profile-details" aria-labelledby="profile-details-title" hidden>
-                        <div class="account-section-title account-view-heading"><div><p class="eyebrow">Your account</p><h2 id="profile-details-title">Personal Information</h2><p>Review and update the details connected to your account.</p></div><button class="btn btn-outline btn-sm" id="edit-profile" type="button">Edit profile</button></div>
+                        <div class="account-section-title account-view-heading"><div><p class="eyebrow">Your account</p><h2 id="profile-details-title">Profile Details</h2><p>Review and update the details connected to your account.</p></div><button class="btn btn-outline btn-sm" id="edit-profile" type="button">Edit profile</button></div>
                         <div class="card account-panel profile-details-card">
+                            <section class="profile-photo-card" aria-label="Profile picture">
+                                <div class="account-photo-wrap">
+                                    <div class="account-avatar" id="account-avatar" aria-hidden="true">EC</div>
+                                    <img class="account-avatar-image" id="account-avatar-image" alt="Your profile picture" hidden>
+                                    <button class="account-photo-change" id="change-profile-photo" type="button" aria-label="Change profile picture" title="Change profile picture">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h3l1.5-2h7L17 7h3v12H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+                                    </button>
+                                    <input id="profile-photo-input" type="file" accept="image/*" hidden>
+                                </div>
+                                <div class="profile-photo-copy">
+                                    <strong>Profile Picture</strong>
+                                    <span id="account-name">Loading your account…</span>
+                                    <span id="account-email"></span>
+                                    <small id="account-role">Customer</small>
+                                </div>
+                            </section>
+                            <p class="account-photo-error" id="profile-photo-error" role="alert" hidden></p>
                             <div class="profile-detail-list">
                                 <div class="profile-detail"><span>First name</span><strong id="profile-first-name">—</strong></div>
                                 <div class="profile-detail"><span>Last name</span><strong id="profile-last-name">—</strong></div>
                                 <div class="profile-detail"><span>Email</span><strong id="profile-email-value">—</strong></div>
+                                <div class="profile-detail"><span>Role</span><strong id="profile-role-value">—</strong></div>
+                                <div class="profile-detail"><span>Gender</span><strong id="profile-gender-value">—</strong></div>
+                                <div class="profile-detail"><span>Age</span><strong id="profile-age-value">—</strong></div>
                                 <div class="profile-detail"><span>Phone number</span><strong id="profile-phone-value">—</strong></div>
                                 <div class="profile-detail"><span>Birthday</span><strong id="profile-birthday-value">—</strong></div>
-                                <div class="profile-detail"><span>Account role</span><strong id="profile-role-value">—</strong></div>
                                 <div class="profile-detail"><span>Joined</span><strong id="profile-joined-value">—</strong></div>
                             </div>
                             <form id="profile-form" class="account-form profile-edit-form" novalidate hidden>
@@ -168,15 +171,33 @@
                         </form>
                     </section>
                     <section class="account-view" data-view="settings" aria-labelledby="settings-title" hidden>
-                        <div class="account-section-title"><div><p class="eyebrow">Account security</p><h2 id="settings-title">Password &amp; Security</h2><p>Update the password used to sign in to your account.</p></div></div>
-                        <div class="card account-panel settings-panel">
-                            <form id="password-form" class="account-form" novalidate>
-                                <div><label for="current-password">Current password</label><input id="current-password" name="current_password" type="password" required autocomplete="current-password"></div>
-                                <div><label for="new-password">New password</label><input id="new-password" name="new_password" type="password" required minlength="8" autocomplete="new-password"><small>Use at least 8 characters.</small></div>
-                                <div><label for="confirm-password">Confirm new password</label><input id="confirm-password" name="confirm_password" type="password" required minlength="8" autocomplete="new-password"></div>
-                                <p class="account-message error" id="password-error" role="alert"></p>
-                                <div class="account-form-actions"><button class="btn btn-primary" type="submit">Update password</button><span class="account-message" id="password-status" role="status" aria-live="polite"></span></div>
-                            </form>
+                        <div class="account-section-title"><div><p class="eyebrow">Your preferences</p><h2 id="settings-title">Settings</h2><p>Manage the account options currently available for your Egg &amp; Chicken account.</p></div></div>
+                        <div class="settings-section-grid">
+                            <section class="card account-panel settings-category" aria-labelledby="account-settings-heading">
+                                <h3 id="account-settings-heading">Account Settings</h3>
+                                <button class="settings-link" type="button" data-account-view="profile-details"><span><strong>Profile Information</strong><small>Review your name, contact details, and profile.</small></span><span aria-hidden="true">›</span></button>
+                                <div class="settings-unavailable"><strong>Email Verification</strong><span>Not available</span></div>
+                                <div class="settings-unavailable"><strong>Document &amp; ID Verification</strong><span>Not available</span></div>
+                                <div class="settings-password" id="password-settings">
+                                    <h4>Change Password</h4>
+                                    <form id="password-form" class="account-form" novalidate>
+                                        <div><label for="current-password">Current password</label><input id="current-password" name="current_password" type="password" required autocomplete="current-password"></div>
+                                        <div><label for="new-password">New password</label><input id="new-password" name="new_password" type="password" required minlength="8" autocomplete="new-password"><small>Use at least 8 characters.</small></div>
+                                        <div><label for="confirm-password">Confirm new password</label><input id="confirm-password" name="confirm_password" type="password" required minlength="8" autocomplete="new-password"></div>
+                                        <p class="account-message error" id="password-error" role="alert"></p>
+                                        <div class="account-form-actions"><button class="btn btn-primary" type="submit">Update password</button><span class="account-message" id="password-status" role="status" aria-live="polite"></span></div>
+                                    </form>
+                                </div>
+                                <button class="settings-link" type="button" data-account-view="payment-methods"><span><strong>Payment Methods</strong><small>See how payments are handled at checkout.</small></span><span aria-hidden="true">›</span></button>
+                                <div class="settings-unavailable"><strong>Deactivate Account</strong><span>Not available</span></div>
+                            </section>
+                            <section class="card account-panel settings-category" aria-labelledby="app-settings-heading">
+                                <h3 id="app-settings-heading">App Settings</h3>
+                                <button class="settings-link" type="button" data-account-view="notifications"><span><strong>Notifications</strong><small>Update available email and SMS preferences.</small></span><span aria-hidden="true">›</span></button>
+                                <div class="settings-unavailable"><strong>App Preferences</strong><span>Not available</span></div>
+                                <button class="settings-link" type="button" data-account-view="settings" data-settings-focus="password-settings"><span><strong>Privacy and Security</strong><small>Review your password security settings.</small></span><span aria-hidden="true">›</span></button>
+                                <button class="settings-link" type="button" data-open-customer-chat><span><strong>Help and Support</strong><small>Chat with the Egg &amp; Chicken support team.</small></span><span aria-hidden="true">›</span></button>
+                            </section>
                         </div>
                     </section>
                     <div id="account-error" class="account-load-error" role="alert" hidden></div>

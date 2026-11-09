@@ -334,20 +334,27 @@ async function initializeCustomerChat() {
   if (!customer || customer.role !== 'customer') return;
   const root = document.createElement('section');
   root.className = 'customer-chat';
-  root.innerHTML = '<button class="customer-chat-toggle" type="button" aria-label="Chat with us" title="Chat with us" aria-expanded="false" aria-controls="customer-chat-panel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8z"/></svg></button><section class="customer-chat-panel" id="customer-chat-panel" hidden aria-label="Customer support chat"><header><div><strong>Farm support</strong><small>Ask about products or an order</small></div><button type="button" aria-label="Close chat" data-chat-close>×</button></header><div class="customer-chat-messages" aria-live="polite"><p class="customer-chat-empty">Loading your messages…</p></div><p class="customer-chat-error" role="alert" hidden></p><form class="customer-chat-compose"><label class="sr-only" for="customer-chat-order">Related order</label><select id="customer-chat-order" name="order_id"><option value="">General question</option></select><label class="sr-only" for="customer-chat-input">Your message</label><textarea id="customer-chat-input" name="message" rows="2" maxlength="4000" required placeholder="Write a message…"></textarea><button type="submit" aria-label="Send message">Send</button></form></section>';
+  root.innerHTML = '<button class="customer-chat-toggle" type="button" aria-label="Chat with us" title="Chat with us" aria-expanded="false" aria-controls="customer-chat-panel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8z"/></svg></button><section class="customer-chat-panel" id="customer-chat-panel" hidden aria-label="Customer support chat"><header><div><strong>Farm support</strong><small>Ask about products or an order</small></div><button type="button" aria-label="Close chat" data-chat-close>×</button></header><div class="customer-chat-messages" aria-live="polite"><p class="customer-chat-empty">Loading your messages…</p></div><p class="customer-chat-error" role="alert" hidden></p><form class="customer-chat-compose"><label class="sr-only" for="customer-chat-order">Related order</label><select id="customer-chat-order" name="order_id"><option value="">General question</option></select><label class="sr-only" for="customer-chat-input">Your message</label><textarea id="customer-chat-input" name="message" rows="2" maxlength="4000" required placeholder="Write a message…"></textarea><button type="submit" aria-label="Send message" title="Send message"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg><span class="sr-only">Send message</span></button></form></section>';
   document.body.append(root);
   const panel = $('.customer-chat-panel', root);
   const toggle = $('.customer-chat-toggle', root);
   const messagesTarget = $('.customer-chat-messages', root);
   const errorTarget = $('.customer-chat-error', root);
+  const compose = $('.customer-chat-compose', root);
+  const sendButton = $('[type="submit"]', compose);
+  const messageInput = compose.elements.message;
+  const updateSendButton = () => {
+    sendButton.disabled = !messageInput.value.trim() || sendButton.dataset.sending === 'true';
+  };
   const escape = value => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
   const loadMessages = async () => {
     try {
       const data = await api.get('/chat/messages');
       const messages = data.messages || [];
-      messagesTarget.innerHTML = messages.length ? messages.map(message =>
-        `<article class="customer-chat-message${message.sender_role === 'customer' ? ' is-customer' : ''}"><p>${escape(message.body)}</p>${message.order_id ? `<small>Order #${escape(message.order_id)}</small>` : ''}<time>${escape(new Date(message.created_at).toLocaleString())}</time></article>`
-      ).join('') : '<p class="customer-chat-empty">No messages yet. Send us a question and our team will reply here.</p>';
+      messagesTarget.innerHTML = messages.length ? messages.map(message => {
+        const ownMessage = Number(message.sender_id) === Number(customer.id);
+        return `<article class="customer-chat-message${ownMessage ? ' is-customer' : ''}" data-message-id="${escape(message.id)}"><p>${escape(message.body)}</p>${message.order_id ? `<small>Order #${escape(message.order_id)}</small>` : ''}<div class="customer-chat-message-actions"><time>${escape(new Date(message.created_at).toLocaleString())}</time>${ownMessage ? `<button type="button" data-chat-delete="${escape(message.id)}" aria-label="Delete your message" title="Delete message">Delete</button>` : ''}</div></article>`;
+      }).join('') : '<p class="customer-chat-empty">No messages yet. Send us a question and our team will reply here.</p>';
       messagesTarget.scrollTop = messagesTarget.scrollHeight;
       errorTarget.hidden = true;
     } catch (error) {
@@ -355,6 +362,31 @@ async function initializeCustomerChat() {
       errorTarget.hidden = false;
     }
   };
+  messagesTarget.addEventListener('click', async event => {
+    const button = event.target.closest('[data-chat-delete]');
+    if (!button || !window.confirm('Delete this message? This cannot be undone.')) return;
+    button.disabled = true;
+    try {
+      await api.delete(`/chat/messages/${encodeURIComponent(button.dataset.chatDelete)}`);
+      button.closest('.customer-chat-message').remove();
+      if (!messagesTarget.querySelector('.customer-chat-message')) {
+        messagesTarget.innerHTML = '<p class="customer-chat-empty">No messages yet. Send us a question and our team will reply here.</p>';
+      }
+      errorTarget.hidden = true;
+    } catch (error) {
+      errorTarget.textContent = error.message;
+      errorTarget.hidden = false;
+      button.disabled = false;
+    }
+  });
+  document.addEventListener('click', event => {
+    if (!event.target.closest('[data-open-customer-chat]')) return;
+    panel.hidden = false;
+    toggle.setAttribute('aria-expanded', 'true');
+    loadMessages();
+  });
+  messageInput.addEventListener('input', updateSendButton);
+  updateSendButton();
   try {
     const orders = await api.getOrders();
     $('.customer-chat-compose select', root).innerHTML = '<option value="">General question</option>' + orders.map(order =>
@@ -373,23 +405,27 @@ async function initializeCustomerChat() {
     panel.hidden = true;
     toggle.setAttribute('aria-expanded', 'false');
   });
-  $('.customer-chat-compose', root).addEventListener('submit', async event => {
+  compose.addEventListener('submit', async event => {
     event.preventDefault();
     const form = event.currentTarget;
     const message = form.elements.message.value.trim();
     if (!message) return;
-    const button = form.querySelector('[type="submit"]');
-    button.disabled = true;
+    sendButton.dataset.sending = 'true';
+    sendButton.setAttribute('aria-label', 'Sending message');
+    updateSendButton();
     try {
       await api.post('/chat/messages', { message, order_id: form.elements.order_id.value || null });
       form.elements.message.value = '';
+      updateSendButton();
       errorTarget.hidden = true;
       await loadMessages();
     } catch (error) {
       errorTarget.textContent = error.message;
       errorTarget.hidden = false;
     } finally {
-      button.disabled = false;
+      delete sendButton.dataset.sending;
+      sendButton.setAttribute('aria-label', 'Send message');
+      updateSendButton();
     }
   });
   window.setInterval(() => {
@@ -417,4 +453,4 @@ document.addEventListener('click', async e => {
   if(e.target.closest('#burger')){ const m=$('#menu'), o=m.classList.toggle('open'); $('#burger').setAttribute('aria-expanded',String(o));$('#burger').setAttribute('aria-label',o?'Close navigation menu':'Open navigation menu'); }
   if(e.target.closest('#menu a')){const m=$('#menu');m.classList.remove('open');$('#burger')?.setAttribute('aria-expanded','false');$('#burger')?.setAttribute('aria-label','Open navigation menu')}
 });
-(async()=>{ try{$('#navbar').innerHTML=await partial('navbar');$('#footer').innerHTML=await partial('footer');if(!await initializeCustomerAuth())return;const nav=$('#navbar .nav');const updateNav=()=>nav?.classList.toggle('is-scrolled',window.scrollY>4);window.addEventListener('scroll',updateNav,{passive:true});updateNav();configureNavbarAuthentication();configureMobileNavigation();document.dispatchEvent(new Event('shell:ready'));updateBadge().catch(error=>console.error('Cart quantity could not be refreshed',error));initializeCustomerChat().catch(error=>console.error('Customer support chat could not be initialized',error))}catch(error){console.error('Page shell failed to load',error)} })();
+(async()=>{ try{$('#navbar').innerHTML=await partial('navbar');const footer=$('#footer');const path=location.pathname.toLowerCase();if(path==='/'||path.endsWith('/index.html')){if(footer)footer.innerHTML=await partial('footer')}else footer?.remove();if(!await initializeCustomerAuth())return;const nav=$('#navbar .nav');const updateNav=()=>nav?.classList.toggle('is-scrolled',window.scrollY>4);window.addEventListener('scroll',updateNav,{passive:true});updateNav();configureNavbarAuthentication();configureMobileNavigation();document.dispatchEvent(new Event('shell:ready'));updateBadge().catch(error=>console.error('Cart quantity could not be refreshed',error));initializeCustomerChat().catch(error=>console.error('Customer support chat could not be initialized',error))}catch(error){console.error('Page shell failed to load',error)} })();

@@ -54,6 +54,20 @@ def get_customer_messages():
     return success_response({"messages": [serialize_message(message) for message in messages]})
 
 
+@chat_bp.delete("/messages/<int:message_id>")
+@roles_required("customer")
+def delete_customer_message(message_id):
+    customer = current_user()
+    message = ChatMessage.query.filter_by(
+        id=message_id,
+        customer_id=customer.id,
+        sender_id=customer.id,
+    ).first_or_404()
+    db.session.delete(message)
+    db.session.commit()
+    return success_response({}, "Message deleted")
+
+
 @chat_bp.post("/messages")
 @roles_required("customer")
 def send_customer_message():

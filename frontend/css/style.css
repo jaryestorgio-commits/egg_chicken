@@ -240,6 +240,10 @@ input:focus,select:focus{border-color:var(--red)}
 .customer-chat-message.is-customer{align-self:flex-end;border-color:#d7e7d8;border-radius:12px 12px 3px 12px;background:#edf5ec}
 .customer-chat-message p{margin:0;white-space:pre-wrap}
 .customer-chat-message small,.customer-chat-message time{display:block;margin-top:5px;color:#738076;font-size:.69rem}
+.customer-chat-message-actions{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.customer-chat-message-actions button{margin-top:5px;padding:2px 0;border:0;background:transparent;color:#8e3329;font:700 .69rem "DM Sans",sans-serif;cursor:pointer}
+.customer-chat-message-actions button:hover{text-decoration:underline;text-underline-offset:2px}
+.customer-chat-message-actions button:disabled{opacity:.55;cursor:wait}
 .customer-chat-empty{margin:auto;color:#69776c;text-align:center;font-size:.85rem;line-height:1.5}
 .customer-chat-error{margin:0;padding:8px 12px;background:#fff2ef;color:#8e3329;font-size:.8rem}
 .customer-chat-error[hidden]{display:none}
@@ -247,8 +251,10 @@ input:focus,select:focus{border-color:var(--red)}
 .customer-chat-compose select{grid-column:1/-1;width:100%;min-height:34px;padding:6px 8px;border:1px solid #dce5d9;border-radius:8px;background:#fff;color:#18372b}
 .customer-chat-compose textarea{min-width:0;min-height:42px;max-height:110px;padding:9px;border:1px solid #dce5d9;border-radius:9px;font:inherit;resize:vertical}
 .customer-chat-compose textarea:focus{border-color:#276044;outline:2px solid rgba(39,96,68,.16)}
-.customer-chat-compose>button{min-height:42px;padding:0 14px;border:0;border-radius:9px;background:#d7a633;color:#18372b;font-weight:800;cursor:pointer}
-.customer-chat-compose>button:disabled{opacity:.6;cursor:wait}
+.customer-chat-compose>button{display:grid;width:44px;min-height:42px;place-items:center;padding:0;border:0;border-radius:9px;background:#d7a633;color:#18372b;cursor:pointer;transition:background-color .18s,opacity .18s}
+.customer-chat-compose>button:hover:not(:disabled){background:#e5b84f}
+.customer-chat-compose>button svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8}
+.customer-chat-compose>button:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:600px){.customer-chat{right:12px;bottom:84px}.customer-chat-panel{height:min(520px,calc(100vh - 150px))}}
 
 #navbar{position:sticky;top:0;z-index:9999}
