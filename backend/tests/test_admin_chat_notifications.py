@@ -81,6 +81,36 @@ def test_customer_chat_admin_reply_unread_counts_and_notification(client, app):
     assert data["notifications"][0]["href"] == f"messages.html?customer={customer_id}"
 
 
+def test_admin_can_start_conversation_and_customer_receives_message(client, app):
+    customer_token = _register_customer(client, "admin-first-message@example.com")
+    admin_token = _create_admin(client, app)
+    customer_headers = _headers(customer_token)
+    admin_headers = _headers(admin_token)
+    with app.app_context():
+        customer_id = User.query.filter_by(email="admin-first-message@example.com").one().id
+
+    empty_conversation = client.get(
+        f"/api/v1/admin/chat/conversations/{customer_id}/messages",
+        headers=admin_headers,
+    )
+    assert empty_conversation.status_code == 200
+    assert empty_conversation.get_json()["data"]["messages"] == []
+
+    sent = client.post(
+        f"/api/v1/admin/chat/conversations/{customer_id}/messages",
+        json={"message": "Hello! Let us know if you need help."},
+        headers=admin_headers,
+    )
+    assert sent.status_code == 201
+    assert sent.get_json()["data"]["message"]["sender_role"] == "admin"
+
+    customer_messages = client.get("/api/v1/chat/messages", headers=customer_headers)
+    messages = customer_messages.get_json()["data"]["messages"]
+    assert len(messages) == 1
+    assert messages[0]["body"] == "Hello! Let us know if you need help."
+    assert messages[0]["sender_role"] == "admin"
+
+
 def test_customer_can_only_delete_their_own_chat_messages(client, app):
     customer_token = _register_customer(client, "delete-customer@example.com")
     other_customer_token = _register_customer(client, "other-delete-customer@example.com")

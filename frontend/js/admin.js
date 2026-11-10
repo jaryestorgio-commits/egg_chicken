@@ -1176,7 +1176,7 @@ function renderCustomers() {
 	const users = adminState.users.filter(user => `${user.name} ${user.email}`.toLowerCase().includes(query));
 	const visible = slicePage(users, adminPages.customers);
 	adminQuery('#customer-rows').innerHTML = visible.length ? visible.map(user =>
-		`<tr><td><b>${adminEscape(user.name)}</b><small>#${adminEscape(user.id)}</small></td><td>${adminEscape(user.email)}</td><td>${statusPill(user.role)}</td><td>${adminEscape(adminDate(user.created_at))}</td><td>${user.role === 'customer' ? `<button class="btn btn-outline" type="button" data-customer-history="${adminEscape(user.id)}">View history</button>` : '—'}</td></tr>`
+		`<tr><td><b>${adminEscape(user.name)}</b><small>#${adminEscape(user.id)}</small></td><td>${adminEscape(user.email)}</td><td>${statusPill(user.role)}</td><td>${adminEscape(adminDate(user.created_at))}</td><td>${user.role === 'customer' ? `<div class="admin-row-actions"><button class="btn btn-outline" type="button" data-customer-history="${adminEscape(user.id)}">View history</button><a class="btn btn-primary" href="messages.html?customer=${encodeURIComponent(user.id)}">Message</a></div>` : '—'}</td></tr>`
 	).join('') : adminEmptyRow(5, 'No matching accounts.');
 	renderPagination(adminQuery('#customer-pagination'), adminPages.customers, users.length, 'customers');
 }
