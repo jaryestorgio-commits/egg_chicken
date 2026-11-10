@@ -12,8 +12,6 @@ const adminState = { products: [], categories: [], orders: [], users: [], invent
 const adminPages = { products: 1, orders: 1, inventory: 1, customers: 1 };
 let activeConversationId = null;
 let loadedOrderCustomerId = null;
-let notificationRefreshTimer;
-let conversationRefreshTimer;
 let customersLoadSequence = 0;
 const adminQuery = selector => document.querySelector(selector);
 const adminQueryAll = selector => [...document.querySelectorAll(selector)];
@@ -56,6 +54,10 @@ function adminIconSvg(name) {
 }
 
 function setupAdminCommunication() {
+	if (adminPage && ['deliveries', 'discounts', 'messages'].includes(adminPage)) {
+		window.location.replace('dashboard.html');
+		return;
+	}
 	const sidebar = adminQuery('.admin-nav');
 	if (sidebar) {
 		const links = [
@@ -64,11 +66,8 @@ function setupAdminCommunication() {
 			['products.html', 'Products'],
 			['inventory.html', 'Inventory'],
 			['customers.html', 'Customers'],
-			['deliveries.html', 'Deliveries'],
 			['reports.html', 'Analytics'],
-			['discounts.html', 'Discounts'],
-			['account.html', 'Settings'],
-			['messages.html', 'Help & support']
+			['account.html', 'Settings']
 		];
 		sidebar.innerHTML = links.map(([href, label]) => {
 			const selected = href === `${adminPage}.html` || (adminPage === 'reports' && href === 'reports.html');
@@ -95,10 +94,6 @@ function setupAdminCommunication() {
 		if (greeting) actions.append(greeting);
 		adminQuery('.admin-topbar')?.append(actions);
 	}
-	const notifications = document.createElement('div');
-	notifications.className = 'admin-notification-control';
-	notifications.innerHTML = `<button class="admin-notification-toggle" type="button" aria-label="Notifications" aria-expanded="false" data-notification-toggle>${adminIconSvg('notification')}<span class="admin-notification-count" data-notification-count hidden></span></button><section class="admin-notification-panel" data-notification-panel hidden><header><strong>Notifications</strong><button type="button" class="admin-link-button" data-notifications-read-all>Mark all read</button></header><div data-notification-list><p class="admin-empty">Loading notifications…</p></div></section>`;
-	actions?.prepend(notifications);
 	if (actions && !actions.querySelector('.admin-global-search')) {
 		const search = document.createElement('div');
 		const searchShortcut = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘ K' : 'Ctrl K';
@@ -135,125 +130,6 @@ function setupAdminCommunication() {
 			if (results) results.hidden = true;
 		}
 	});
-	loadAdminNotifications().catch(error => showAdminError(error.message));
-	notificationRefreshTimer = window.setInterval(() => {
-		loadAdminNotifications().catch(error => console.error('Admin notifications could not be refreshed', error));
-	}, 30000);
-	if (adminPage === 'messages') {
-		loadAdminConversations().catch(error => showAdminError(error.message));
-		const customerId = Number(new URLSearchParams(location.search).get('customer'));
-		if (Number.isSafeInteger(customerId) && customerId > 0) {
-			openAdminConversation(customerId).catch(error => showAdminError(error.message));
-		}
-		conversationRefreshTimer = window.setInterval(() => {
-			loadAdminConversations().catch(error => console.error('Admin conversations could not be refreshed', error));
-			if (activeConversationId) loadAdminConversation(activeConversationId).catch(error => console.error('Admin messages could not be refreshed', error));
-		}, 20000);
-	}
-}
-
-function setAdminNavCount(href, value) {
-	const link = adminQuery(`.admin-nav a[href="${href}"]`);
-	if (!link) return;
-	let badge = link.querySelector('.admin-nav-count');
-	const count = Number(value) || 0;
-	if (!count) {
-		badge?.remove();
-		return;
-	}
-	if (!badge) {
-		badge = document.createElement('span');
-		badge.className = 'admin-nav-count';
-		link.append(badge);
-	}
-	badge.textContent = count > 99 ? '99+' : String(count);
-}
-
-async function loadAdminNotifications() {
-	const data = await adminRequest('/admin/notifications');
-	const count = Number(data.unread_count || 0);
-	setAdminNavCount('messages.html', (data.notifications || []).filter(item => item.kind === 'message' && !item.is_read).length);
-	const badge = adminQuery('[data-notification-count]');
-	if (badge) {
-		badge.textContent = count > 99 ? '99+' : String(count);
-		badge.hidden = count === 0;
-	}
-	const list = adminQuery('[data-notification-list]');
-	if (!list) return;
-	const items = data.notifications || [];
-	list.innerHTML = items.length ? items.map(item =>
-		`<a class="admin-notification-item${item.is_read ? '' : ' is-unread'}" href="${adminEscape(item.href)}" data-notification-id="${adminEscape(item.id)}"><span class="admin-notification-dot" aria-hidden="true"></span><span><strong>${adminEscape(item.title)}</strong><small>${adminEscape(item.message)}</small><time>${adminEscape(adminDateTime(item.created_at))}</time></span></a>`
-	).join('') : '<p class="admin-empty">No notifications yet.</p>';
-}
-
-async function loadAdminConversations() {
-	const data = await adminRequest('/admin/chat/conversations');
-	const target = adminQuery('#admin-conversation-list');
-	if (!target) return;
-	const conversations = data.conversations || [];
-	if (!conversations.length) {
-		target.innerHTML = '<p class="admin-empty">No customer messages yet.</p>';
-		return;
-	}
-	target.innerHTML = conversations.map(item =>
-		`<button class="admin-conversation${Number(activeConversationId) === item.customer_id ? ' is-active' : ''}" type="button" data-conversation-id="${adminEscape(item.customer_id)}"><span class="admin-conversation-name">${adminEscape(item.customer_name)}</span><small>${adminEscape(item.latest_message.body)}</small><span class="admin-conversation-meta"><time>${adminEscape(adminDateTime(item.latest_message.created_at))}</time>${item.unread_count ? `<b>${adminEscape(item.unread_count)}</b>` : ''}</span></button>`
-	).join('');
-}
-
-async function openAdminConversation(customerId) {
-	activeConversationId = customerId;
-	const url = new URL(location.href);
-	url.searchParams.set('customer', String(customerId));
-	history.replaceState(null, '', url);
-	await loadAdminConversation(customerId);
-	await loadAdminConversations();
-}
-
-async function loadAdminConversation(customerId) {
-	const data = await adminRequest(`/admin/chat/conversations/${customerId}/messages`);
-	const heading = adminQuery('#admin-chat-heading');
-	const target = adminQuery('#admin-chat-messages');
-	const form = adminQuery('#admin-chat-form');
-	if (!heading || !target || !form) return;
-	heading.innerHTML = `<h2>${adminEscape(data.customer.name)}</h2><p>${adminEscape(data.customer.email)}</p>`;
-	const messages = data.messages || [];
-	target.innerHTML = messages.length ? messages.map(message =>
-		`<article class="admin-chat-bubble${message.sender_role === 'admin' ? ' is-admin' : ''}"><p>${adminEscape(message.body)}</p>${message.order_id ? `<small>Order #${adminEscape(message.order_id)}</small>` : ''}<time>${adminEscape(adminDateTime(message.created_at))}</time></article>`
-	).join('') : '<p class="admin-empty">Start the conversation by replying below.</p>';
-	form.hidden = false;
-	const orderSelect = adminQuery('#admin-chat-order');
-	if (loadedOrderCustomerId !== customerId) {
-		const orderData = await adminRequest(`/admin/users/${customerId}/orders`);
-		orderSelect.innerHTML = '<option value="">No order attached</option>' + (orderData.orders || []).map(order =>
-			`<option value="${adminEscape(order.id)}">Order #${adminEscape(order.id)} · ${adminEscape(order.status)}</option>`
-		).join('');
-		loadedOrderCustomerId = customerId;
-	}
-	target.scrollTop = target.scrollHeight;
-}
-
-async function sendAdminMessage(event) {
-	event.preventDefault();
-	if (!activeConversationId) return;
-	const form = event.currentTarget;
-	const message = form.elements.message.value.trim();
-	if (!message) return;
-	const button = form.querySelector('[type="submit"]');
-	button.disabled = true;
-	try {
-		await adminRequest(`/admin/chat/conversations/${activeConversationId}/messages`, 'POST', {
-			message,
-			order_id: form.elements.order_id.value || null
-		});
-		form.elements.message.value = '';
-		await loadAdminConversation(activeConversationId);
-		await loadAdminConversations();
-		await loadAdminNotifications();
-	} catch (error) {
-		showAdminError(error.message);
-	} finally {
-		button.disabled = false;
-	}
 }
 
 async function adminRequest(path, method = 'GET', body) {
