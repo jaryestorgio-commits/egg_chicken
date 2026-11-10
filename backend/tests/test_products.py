@@ -1,7 +1,9 @@
+from io import BytesIO
+
 import pytest
 
 from extensions import db
-from models import Product, User
+from models import AdminNotification, Product, User
 
 
 def create_customer(client, email="product-customer@example.com"):
@@ -25,6 +27,16 @@ def create_admin(client, app):
 
 def auth_headers(token):
     return {"Authorization": f"Bearer {token}"}
+
+
+def enable_test_product_image_uploads(app):
+    with app.app_context():
+        app.config.update({
+            "PRODUCT_IMAGE_UPLOADS_ENABLED": True,
+            "CLOUDINARY_CLOUD_NAME": "test-cloud",
+            "CLOUDINARY_API_KEY": "test-key",
+            "CLOUDINARY_API_SECRET": "test-secret",
+        })
 
 
 def product_payload(**overrides):
@@ -96,6 +108,131 @@ def test_create_product_requires_admin(client, app):
 
     assert response.status_code == 401
     assert customer_response.status_code == 403
+
+
+def test_admin_can_upload_supported_product_image(client, app, monkeypatch):
+    token = create_admin(client, app)
+    enable_test_product_image_uploads(app)
+    expected_url = "https://res.cloudinary.com/test-cloud/image/upload/products/egg.png"
+    monkeypatch.setattr(
+        "routes.products.upload_product_image",
+        lambda image_data, content_type: expected_url
+        if image_data.startswith(b"\x89PNG\r\n\x1a\n") and content_type == "image/png"
+        else pytest.fail("Image bytes or content type were not validated"),
+    )
+
+    response = client.post(
+        "/api/v1/products/images",
+        data={"image": (BytesIO(b"\x89PNG\r\n\x1a\nsample-image"), "egg.PNG")},
+        headers=auth_headers(token),
+    )
+
+    assert response.status_code == 200
+    assert response.get_json()["data"]["image_url"] == expected_url
+
+
+def test_product_image_upload_rejects_unauthorized_and_invalid_files(client, app, monkeypatch):
+    token = create_admin(client, app)
+    enable_test_product_image_uploads(app)
+    monkeypatch.setattr(
+        "routes.products.upload_product_image",
+        lambda *_args: pytest.fail("Invalid uploads must not be sent to cloud storage"),
+    )
+    unauthorized = client.post(
+        "/api/v1/products/images",
+        data={"image": (BytesIO(b"\x89PNG\r\n\x1a\nsample"), "egg.png")},
+    )
+    invalid_type = client.post(
+        "/api/v1/products/images",
+        data={"image": (BytesIO(b"not an image"), "egg.gif")},
+        headers=auth_headers(token),
+    )
+    invalid_contents = client.post(
+        "/api/v1/products/images",
+        data={"image": (BytesIO(b"not a PNG"), "egg.png")},
+        headers=auth_headers(token),
+    )
+
+    assert unauthorized.status_code == 401
+    assert invalid_type.status_code == 400
+    assert invalid_contents.status_code == 400
+
+
+def test_product_image_upload_reports_missing_cloud_storage_configuration(client, app, monkeypatch):
+    token = create_admin(client, app)
+    with app.app_context():
+        app.config.update({
+            "PRODUCT_IMAGE_UPLOADS_ENABLED": True,
+            "CLOUDINARY_CLOUD_NAME": "",
+            "CLOUDINARY_API_KEY": "",
+            "CLOUDINARY_API_SECRET": "",
+        })
+
+    response = client.post(
+        "/api/v1/products/images",
+        data={"image": (BytesIO(b"\x89PNG\r\n\x1a\nsample"), "egg.png")},
+        headers=auth_headers(token),
+    )
+
+    assert response.status_code == 503
+    assert "storage is not configured" in response.get_json()["message"]
+
+
+def test_product_image_upload_is_disabled_by_default(client, app, monkeypatch):
+    token = create_admin(client, app)
+    monkeypatch.setattr(
+        "routes.products.upload_product_image",
+        lambda *_args: pytest.fail("Disabled uploads must not contact cloud storage"),
+    )
+
+    status = client.get(
+        "/api/v1/products/images/status",
+        headers=auth_headers(token),
+    )
+    response = client.post(
+        "/api/v1/products/images",
+        data={"image": (BytesIO(b"\x89PNG\r\n\x1a\nsample-image"), "egg.png")},
+        headers=auth_headers(token),
+    )
+
+    assert status.status_code == 200
+    assert status.get_json()["data"]["enabled"] is False
+    assert response.status_code == 503
+    assert "uploads are disabled" in response.get_json()["message"]
+
+
+def test_product_catalog_changes_create_persistent_admin_notifications(client, app):
+    token = create_admin(client, app)
+    headers = auth_headers(token)
+    created = client.post(
+        "/api/v1/products",
+        json=product_payload(image_url="https://res.cloudinary.com/test-cloud/image/upload/egg.jpg"),
+        headers=headers,
+    )
+    product = created.get_json()["data"]["product"]
+    updated = client.patch(
+        f"/api/v1/products/{product['id']}",
+        json={"name": "Large free-range eggs"},
+        headers=headers,
+    )
+    hidden = client.delete(f"/api/v1/products/{product['id']}", headers=headers)
+    notifications = client.get("/api/v1/admin/notifications", headers=headers)
+    product_notifications = [
+        item for item in notifications.get_json()["data"]["notifications"]
+        if item["related_type"] == "catalog_product"
+    ]
+
+    assert created.status_code == 201
+    assert updated.status_code == 200
+    assert hidden.status_code == 200
+    assert len(product_notifications) == 3
+    assert all(item["kind"] == "product_update" for item in product_notifications)
+    assert any(
+        item["href"] == "products.html?search=Large%20free-range%20eggs"
+        for item in product_notifications
+    )
+    with app.app_context():
+        assert AdminNotification.query.count() == 3
 
 
 def test_get_products_returns_active_products_only(client, app):

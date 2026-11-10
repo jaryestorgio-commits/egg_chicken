@@ -36,6 +36,7 @@ def create_app(test_config=None):
     app = Flask(__name__, static_folder=str(frontend_dir), static_url_path="")
     app.response_class = JSONCompatibleHTMLResponse
     app.config.from_object(Config)
+    app.config.setdefault("MAX_CONTENT_LENGTH", 5 * 1024 * 1024 + 64 * 1024)
     if test_config:
         app.config.update(test_config)
 
@@ -87,6 +88,7 @@ def create_app(test_config=None):
     @app.errorhandler(404)
     @app.errorhandler(409)
     @app.errorhandler(422)
+    @app.errorhandler(413)
     @app.errorhandler(500)
     def handle_http_error(error):
         status = error.code if hasattr(error, "code") else 500
@@ -96,6 +98,7 @@ def create_app(test_config=None):
             403: "You do not have permission to perform this action",
             404: "Resource not found",
             409: "Resource conflict",
+            413: "Uploaded file must not exceed 5 MB",
             422: "Validation failed",
             500: "Internal server error",
         }

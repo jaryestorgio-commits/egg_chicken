@@ -7,3 +7,6 @@ migrations/versions/*
 !models/
 models/*
 !models/discount.py
+!services/
+services/*
+!services/image_storage.py

@@ -52,9 +52,25 @@ def create_admin_order(app, customer_id):
 def test_admin_dashboard_contains_live_customer_order_and_payment_data(client, app):
     admin_token, _ = create_user(client, app, "admin@example.com", "admin")
     _, customer_id = create_user(client, app, "customer@example.com", "customer")
-    create_admin_order(app, customer_id)
+    product_id, order_id = create_admin_order(app, customer_id)
+    with app.app_context():
+        db.session.add(OrderItem(
+            order_id=order_id,
+            product_id=product_id,
+            quantity=2,
+            unit_price=12.5,
+            subtotal=25,
+        ))
+        db.session.commit()
+        order_created_at = db.session.get(Order, order_id).created_at
+        if order_created_at.tzinfo is None:
+            order_created_at = order_created_at.replace(tzinfo=timezone.utc)
+        order_date = order_created_at.astimezone(ZoneInfo("Asia/Manila")).date().isoformat()
 
-    response = client.get("/api/v1/admin/dashboard", headers=auth_headers(admin_token))
+    response = client.get(
+        f"/api/v1/admin/dashboard?start_date={order_date}&end_date={order_date}",
+        headers=auth_headers(admin_token),
+    )
 
     assert response.status_code == 200
     data = response.get_json()["data"]
@@ -67,6 +83,8 @@ def test_admin_dashboard_contains_live_customer_order_and_payment_data(client, a
     assert data["total_sales"] == 0
     assert data["low_stock_products"] == 1
     assert data["order_statuses"]["processing"] == 1
+    assert data["top_products"][0]["id"] == data["recent_orders"][0]["items"][0]["product_id"]
+    assert data["top_products"][0]["units_sold"] == 2
     order = data["recent_orders"][0]
     assert order["customer"]["email"] == "customer@example.com"
     assert order["payments"][0]["payment_status"] == "pending"

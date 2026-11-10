@@ -31,6 +31,8 @@ The site is designed to connect customers with fresh products from trusted local
    python -m pip install -r requirements.txt
    ```
 
+   Admin product images accept JPG, JPEG, PNG, and WEBP files up to 5 MB. The backend verifies the file signature and sends the image directly to Cloudinary; only its persistent HTTPS image URL is stored in PostgreSQL. There is deliberately no local-filesystem fallback because Render's application filesystem is not persistent across deployments/restarts. Configure the three Cloudinary variables before enabling product-image uploads on the live site.
+
 3. Create `backend/.env` and set the variables described below. Keep this file private and out of version control.
 4. Apply the database migrations:
 
@@ -64,6 +66,7 @@ Set these backend environment variables in Render:
 - `SECRET_KEY` and `JWT_SECRET_KEY`: separate, strong, private values.
 - `DATABASE_URL`: the connection URL for the existing PostgreSQL database. The application accepts Render's `postgres://` and `postgresql://` URL schemes and configures the installed Psycopg 3 driver.
 - `CORS_ORIGINS`: include `https://egg-chicken.onrender.com`. Add any separately hosted frontend origins explicitly; use comma-separated origins without trailing slashes.
+- Product image uploads are disabled by default. To enable them, explicitly set `PRODUCT_IMAGE_UPLOADS_ENABLED=true` and configure `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET` in Render's backend environment. Keep the API secret out of frontend code and source control.
 
 Run the existing database migrations during deployment when needed. The health endpoint confirms the API process is running but does not check PostgreSQL; verify database access with `/api/v1/products?limit=1` and inspect Render logs if it returns an error.
 
@@ -81,6 +84,9 @@ Set these variables in `backend/.env`:
 | `XENDIT_CALLBACK_TOKEN` | Secret callback token configured in Xendit and sent with invoice webhook requests. |
 | `XENDIT_SUCCESS_URL` | Absolute HTTP(S) URL customers return to after successful hosted checkout. Use `{order_id}` where the order ID should appear. |
 | `XENDIT_FAILURE_URL` | Absolute HTTP(S) URL customers return to after an unsuccessful or cancelled hosted checkout. Use `{order_id}` where the order ID should appear. |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name used for persistent product image uploads. |
+| `CLOUDINARY_API_KEY` | Server-side Cloudinary API key. |
+| `CLOUDINARY_API_SECRET` | Server-side Cloudinary API secret; keep private and configure only in the backend environment. |
 
 Example redirect URL values for a local frontend:
 

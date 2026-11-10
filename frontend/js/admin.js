@@ -10,8 +10,11 @@ const PAGE_SIZE = 10;
 const adminPage = document.body.dataset.adminPage;
 const adminState = { products: [], categories: [], orders: [], users: [], inventory: [], profile: null, report: null, dashboard: null, discounts: [] };
 const adminPages = { products: 1, orders: 1, inventory: 1, customers: 1 };
+let productImageUploadsEnabled = false;
 let activeConversationId = null;
 let loadedOrderCustomerId = null;
+let notificationRefreshTimer;
+let conversationRefreshTimer;
 let customersLoadSequence = 0;
 const adminQuery = selector => document.querySelector(selector);
 const adminQueryAll = selector => [...document.querySelectorAll(selector)];
@@ -54,28 +57,25 @@ function adminIconSvg(name) {
 }
 
 function setupAdminCommunication() {
-	if (adminPage && ['deliveries', 'discounts', 'messages'].includes(adminPage)) {
-		window.location.replace('dashboard.html');
-		return;
-	}
 	const sidebar = adminQuery('.admin-nav');
 	if (sidebar) {
 		const links = [
-			['dashboard.html', 'Overview'],
+			['dashboard.html', 'Dashboard'],
 			['orders.html', 'Orders'],
-			['products.html', 'Products'],
 			['inventory.html', 'Inventory'],
+			['products.html', 'Products'],
 			['customers.html', 'Customers'],
 			['reports.html', 'Analytics'],
-			['account.html', 'Settings']
+			['account.html', 'Settings'],
+			['messages.html', 'Help & support']
 		];
-		sidebar.innerHTML = links.map(([href, label]) => {
+		sidebar.innerHTML = `<p class="admin-nav-label">Main</p>${links.slice(0, 5).map(([href, label]) => {
 			const selected = href === `${adminPage}.html` || (adminPage === 'reports' && href === 'reports.html');
 			return `<a href="${href}"${selected ? ' class="active" aria-current="page"' : ''}><span class="admin-nav-icon" aria-hidden="true">${adminIconSvg(href)}</span><span>${label}</span></a>`;
-		}).join('');
-		if (!sidebar.parentElement.querySelector('.admin-store-switcher')) {
-			sidebar.insertAdjacentHTML('beforebegin', '<div class="admin-store-switcher" title="Store switching is not available in this single-store account"><span class="admin-store-icon" aria-hidden="true">▣</span><span><strong>Egg &amp; Chicken</strong><small><i data-store-health></i><span data-store-status>Checking store API…</span></small></span><span aria-hidden="true">⌄</span></div>');
-		}
+		}).join('')}<p class="admin-nav-label">Other</p>${links.slice(5).map(([href, label]) => {
+			const selected = href === `${adminPage}.html`;
+			return `<a href="${href}"${selected ? ' class="active" aria-current="page"' : ''}><span class="admin-nav-icon" aria-hidden="true">${adminIconSvg(href)}</span><span>${label}</span></a>`;
+		}).join('')}`;
 	}
 	sidebar?.querySelectorAll('a[href]').forEach(link => {
 		if (!link.querySelector('.admin-nav-icon')) {
@@ -107,6 +107,12 @@ function setupAdminCommunication() {
 		profileMenu.innerHTML = `<summary><span class="admin-profile-avatar" data-admin-avatar>EC</span><span><strong data-admin-profile-name>Admin</strong><small>Store administrator</small></span><span aria-hidden="true">⌄</span></summary><div class="admin-profile-dropdown"><a href="account.html">Account settings</a><button type="button" data-admin-logout>Sign out</button></div>`;
 		actions.append(profileMenu);
 	}
+	if (actions && !actions.querySelector('.admin-notification-control')) {
+		const notifications = document.createElement('div');
+		notifications.className = 'admin-notification-control';
+		notifications.innerHTML = `<button class="admin-notification-toggle" type="button" aria-label="Notifications" aria-expanded="false" data-notification-toggle>${adminIconSvg('notification')}<span class="admin-notification-count" data-notification-count hidden></span></button><section class="admin-notification-panel" data-notification-panel hidden><header><strong>Notifications</strong><button type="button" class="admin-link-button" data-notifications-read-all>Mark all read</button></header><div data-notification-list><p class="admin-empty">Loading notifications…</p></div></section>`;
+		actions.insertBefore(notifications, actions.querySelector('.admin-profile-menu'));
+	}
 	const searchInput = adminQuery('#admin-global-search-input');
 	searchInput?.addEventListener('input', () => {
 		window.clearTimeout(adminSearchTimer);
@@ -129,7 +135,128 @@ function setupAdminCommunication() {
 			const results = adminQuery('#admin-search-results');
 			if (results) results.hidden = true;
 		}
+		if (!event.target.closest('.admin-notification-control')) {
+			const panel = adminQuery('[data-notification-panel]');
+			const toggle = adminQuery('[data-notification-toggle]');
+			if (panel) panel.hidden = true;
+			toggle?.setAttribute('aria-expanded', 'false');
+		}
 	});
+	loadAdminNotifications().catch(error => showAdminError(error.message));
+	notificationRefreshTimer = window.setInterval(() => {
+		loadAdminNotifications().catch(error => console.error('Admin notifications could not be refreshed', error));
+	}, 30000);
+	if (adminPage === 'messages') {
+		loadAdminConversations().catch(error => showAdminError(error.message));
+		const customerId = Number(new URLSearchParams(location.search).get('customer'));
+		if (Number.isSafeInteger(customerId) && customerId > 0) {
+			openAdminConversation(customerId).catch(error => showAdminError(error.message));
+		}
+		conversationRefreshTimer = window.setInterval(() => {
+			loadAdminConversations().catch(error => console.error('Admin conversations could not be refreshed', error));
+			if (activeConversationId) loadAdminConversation(activeConversationId).catch(error => console.error('Admin messages could not be refreshed', error));
+		}, 20000);
+	}
+}
+
+function setAdminNavCount(href, value) {
+	const link = adminQuery(`.admin-nav a[href="${href}"]`);
+	if (!link) return;
+	let badge = link.querySelector('.admin-nav-count');
+	const count = Number(value) || 0;
+	if (!count) {
+		badge?.remove();
+		return;
+	}
+	if (!badge) {
+		badge = document.createElement('span');
+		badge.className = 'admin-nav-count';
+		link.append(badge);
+	}
+	badge.textContent = count > 99 ? '99+' : String(count);
+}
+
+async function loadAdminNotifications() {
+	const data = await adminRequest('/admin/notifications');
+	const items = data.notifications || [];
+	const unread = Number(data.unread_count || 0);
+	setAdminNavCount('messages.html', items.filter(item => item.kind === 'message' && !item.is_read).length);
+	const badge = adminQuery('[data-notification-count]');
+	if (badge) {
+		badge.textContent = unread > 99 ? '99+' : String(unread);
+		badge.hidden = unread === 0;
+	}
+	const list = adminQuery('[data-notification-list]');
+	if (!list) return;
+	list.innerHTML = items.length ? items.map(item =>
+		`<a class="admin-notification-item${item.is_read ? '' : ' is-unread'}" href="${adminEscape(item.href)}" data-notification-id="${adminEscape(item.id)}"><span class="admin-notification-dot" aria-hidden="true"></span><span><strong>${adminEscape(item.title)}</strong><small>${adminEscape(item.message)}</small><time>${adminEscape(adminDateTime(item.created_at))}</time></span></a>`
+	).join('') : '<p class="admin-empty">No notifications yet.</p>';
+}
+
+async function loadAdminConversations() {
+	const data = await adminRequest('/admin/chat/conversations');
+	const target = adminQuery('#admin-conversation-list');
+	if (!target) return;
+	const conversations = data.conversations || [];
+	target.innerHTML = conversations.length ? conversations.map(item =>
+		`<button class="admin-conversation${Number(activeConversationId) === item.customer_id ? ' is-active' : ''}" type="button" data-conversation-id="${adminEscape(item.customer_id)}"><span class="admin-conversation-name">${adminEscape(item.customer_name)}</span><small>${adminEscape(item.latest_message.body)}</small><span class="admin-conversation-meta"><time>${adminEscape(adminDateTime(item.latest_message.created_at))}</time>${item.unread_count ? `<b>${adminEscape(item.unread_count)}</b>` : ''}</span></button>`
+	).join('') : '<p class="admin-empty">No customer messages yet.</p>';
+}
+
+async function openAdminConversation(customerId) {
+	activeConversationId = customerId;
+	const url = new URL(location.href);
+	url.searchParams.set('customer', String(customerId));
+	history.replaceState(null, '', url);
+	await loadAdminConversation(customerId);
+	await loadAdminConversations();
+}
+
+async function loadAdminConversation(customerId) {
+	const data = await adminRequest(`/admin/chat/conversations/${customerId}/messages`);
+	const heading = adminQuery('#admin-chat-heading');
+	const target = adminQuery('#admin-chat-messages');
+	const form = adminQuery('#admin-chat-form');
+	if (!heading || !target || !form) return;
+	heading.innerHTML = `<h2>${adminEscape(data.customer.name)}</h2><p>${adminEscape(data.customer.email)}</p>`;
+	const messages = data.messages || [];
+	target.innerHTML = messages.length ? messages.map(message =>
+		`<article class="admin-chat-bubble${message.sender_role === 'admin' ? ' is-admin' : ''}"><p>${adminEscape(message.body)}</p>${message.order_id ? `<small>Order #${adminEscape(message.order_id)}</small>` : ''}<time>${adminEscape(adminDateTime(message.created_at))}</time></article>`
+	).join('') : '<p class="admin-empty">Start the conversation by replying below.</p>';
+	form.hidden = false;
+	const orderSelect = adminQuery('#admin-chat-order');
+	if (loadedOrderCustomerId !== customerId) {
+		const orderData = await adminRequest(`/admin/users/${customerId}/orders`);
+		orderSelect.innerHTML = '<option value="">No order attached</option>' + (orderData.orders || []).map(order =>
+			`<option value="${adminEscape(order.id)}">Order #${adminEscape(order.id)} · ${adminEscape(order.status)}</option>`
+		).join('');
+		loadedOrderCustomerId = customerId;
+	}
+	target.scrollTop = target.scrollHeight;
+}
+
+async function sendAdminMessage(event) {
+	event.preventDefault();
+	if (!activeConversationId) return;
+	const form = event.currentTarget;
+	const message = form.elements.message.value.trim();
+	if (!message) return;
+	const button = form.querySelector('[type="submit"]');
+	button.disabled = true;
+	try {
+		await adminRequest(`/admin/chat/conversations/${activeConversationId}/messages`, 'POST', {
+			message,
+			order_id: form.elements.order_id.value || null
+		});
+		form.elements.message.value = '';
+		await loadAdminConversation(activeConversationId);
+		await loadAdminConversations();
+		await loadAdminNotifications();
+	} catch (error) {
+		showAdminError(error.message);
+	} finally {
+		button.disabled = false;
+	}
 }
 
 async function adminRequest(path, method = 'GET', body) {
@@ -316,20 +443,18 @@ function exportDashboardReport() {
 
 function renderDashboardOverview(stats, period) {
 	const periodSales = stats.sales_period || {};
-	const percentLabel = value => value === null || value === undefined
-		? 'No previous-period comparison'
-		: `${Number(value) >= 0 ? '↑' : '↓'} ${Math.abs(Number(value)).toFixed(1)}% vs previous period`;
-	const salesChange = periodSales.gross_sales_change_percent;
-	const ordersChange = periodSales.orders_change_percent;
 	const dateLabel = new Intl.DateTimeFormat(undefined, {
 		day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Manila'
 	}).format(new Date(`${stats.store_today}T12:00:00+08:00`));
-	adminQuery('#dashboard-welcome').textContent = `A fresh start, ${adminState.profile?.name?.split(/\s+/)[0] || 'there'}.`;
+	const welcome = adminQuery('.admin-dashboard-title p');
+	if (welcome) welcome.textContent = `Welcome back, ${adminState.profile?.name?.split(/\s+/)[0] || 'there'}. Here’s your store’s performance view.`;
 	adminQuery('#dashboard-date').textContent = `Today · ${dateLabel}`;
-	adminQuery('#dashboard-comparison').textContent = `${percentLabel(salesChange)} · ${percentLabel(ordersChange)}`;
 	adminQuery('#dashboard-chart-period').textContent = period === 1
 		? 'Today'
 		: period === 30 ? 'Last 30 days' : 'Last 7 days';
+	adminQuery('#dashboard-category-period').textContent = period === 1
+		? 'Today'
+		: period === 30 ? 'Monthly' : 'Weekly';
 	adminQuery('.admin-updated').textContent = `↻ Updated ${new Intl.DateTimeFormat(undefined, {
 		hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Manila'
 	}).format(new Date())} · PHT`;
@@ -338,10 +463,10 @@ function renderDashboardOverview(stats, period) {
 		? 'First recorded period'
 		: `${comparison >= 0 ? '↑' : '↓'} ${Math.abs(comparison).toFixed(1)}% vs previous period`;
 	const metricItems = [
-		{ label: 'Gross sales', value: adminMoney(periodSales.gross_sales), note: comparisonText, icon: '₱', tone: 'is-forest' },
-		{ label: 'Orders today', value: stats.orders_today || 0, note: `Placed ${stats.store_today} · PHT`, icon: 'orders.html' },
-		{ label: 'Eggs sold', value: `${Number(stats.eggs_sold || 0).toLocaleString()} eggs`, note: `${adminMoney(stats.eggs_sales)} in selected-period sales`, icon: 'egg' },
-		{ label: 'Chicken sold', value: `${Number(stats.chicken_sold || 0).toLocaleString()} items`, note: `${adminMoney(stats.chicken_sales)} in selected-period sales`, icon: 'chicken' }
+		{ label: 'Total revenue', value: adminMoney(periodSales.gross_sales), note: comparisonText, icon: '₱', tone: 'is-forest' },
+		{ label: 'Total orders', value: Number(stats.total_orders || 0).toLocaleString(), note: `${Number(stats.orders_today || 0).toLocaleString()} placed today`, icon: 'orders.html' },
+		{ label: 'Total products', value: Number(stats.total_products || 0).toLocaleString(), note: `${Number(stats.low_stock_products || 0)} products low on stock`, icon: 'products.html' },
+		{ label: 'Active customers', value: Number(stats.active_customers || 0).toLocaleString(), note: 'Ordered in the last 30 days', icon: 'customers.html' }
 	];
 	adminQuery('#admin-stats').innerHTML = metricItems.map(item =>
 		`<article class="admin-stat${item.tone ? ` ${item.tone}` : ''}"><span class="admin-stat-icon" aria-hidden="true">${item.icon === '₱' ? item.icon : adminIconSvg(item.icon)}</span><span>${adminEscape(item.label)}</span><strong>${adminEscape(item.value)}</strong><small>${adminEscape(item.note)}</small></article>`
@@ -349,13 +474,42 @@ function renderDashboardOverview(stats, period) {
 	const orders = stats.recent_orders || [];
 	adminQuery('#recent-orders-count').textContent = `${orders.length} latest`;
 	adminQuery('#dashboard-orders').innerHTML = orders.length ? orders.map(order =>
-		`<tr><td><button class="admin-link-button" type="button" data-order-details="${adminEscape(order.id)}">#EC-${adminEscape(order.id)}</button></td><td>${adminEscape(order.customer?.name || `Customer #${order.user_id}`)}</td><td>${adminEscape((order.items || []).map(item => `${item.quantity} ${item.product_name}`).join(', ') || '—')}</td><td>${adminMoney(order.total_amount)}</td><td>${statusPill(order.payments?.[0]?.payment_status || 'not recorded')}</td><td>${statusPill(order.status)}</td></tr>`
+		`<tr><td><button class="admin-link-button" type="button" data-order-details="${adminEscape(order.id)}">#${adminEscape(order.id)}</button></td><td>${adminEscape(order.customer?.name || `Customer #${order.user_id}`)}</td><td>${adminEscape((order.items || []).map(item => `${item.quantity} ${item.product_name}`).join(', ') || '—')}</td><td>${adminEscape(adminDate(order.created_at))}</td><td>${statusPill(order.status)}</td><td>${adminMoney(order.total_amount)}</td></tr>`
 	).join('') : adminEmptyRow(6, 'No orders yet.');
 	adminQuery('#dashboard-order-caption').textContent = `Showing the latest ${orders.length} of ${Number(stats.total_orders || 0)} orders · merchandise totals include current order records`;
 	adminQuery('#dashboard-revenue').textContent = adminMoney(periodSales.gross_sales);
 	renderOverviewChart(adminQuery('#dashboard-sales-chart'), stats.sales_by_day || []);
-	renderFulfillment(stats.fulfillment || {});
+	renderCategorySales(adminQuery('#dashboard-category-chart'), stats.sales_by_day || [], periodSales.gross_sales);
+	adminQuery('#dashboard-category-total').textContent = adminMoney(periodSales.gross_sales);
+	renderTopProducts(adminQuery('#dashboard-top-products'), stats.top_products || []);
 	renderLowStock(stats.low_stock_items || []);
+}
+
+function renderCategorySales(target, sales, grossSales) {
+	if (!target) return;
+	const totals = sales.reduce((sum, item) => ({
+		eggs: sum.eggs + Math.max(0, Number(item.eggs_sales) || 0),
+		chicken: sum.chicken + Math.max(0, Number(item.chicken_sales) || 0),
+		gross: sum.gross + Math.max(0, Number(item.gross_sales) || 0)
+	}), { eggs: 0, chicken: 0, gross: 0 });
+	const total = Math.max(Number(grossSales) || totals.gross, totals.eggs + totals.chicken);
+	const categories = [
+		{ label: 'Eggs', value: totals.eggs, color: '#0d9b68' },
+		{ label: 'Chicken', value: totals.chicken, color: '#50c99a' },
+		{ label: 'Other products', value: Math.max(0, total - totals.eggs - totals.chicken), color: '#adf0d7' }
+	];
+	const circumference = 2 * Math.PI * 53;
+	let offset = 0;
+	const segments = categories.map(category => {
+		const length = total ? category.value / total * circumference : 0;
+		const circle = `<circle cx="70" cy="70" r="53" fill="none" stroke="${category.color}" stroke-width="16" stroke-dasharray="${length} ${circumference - length}" stroke-dashoffset="${-offset}" transform="rotate(-90 70 70)"/>`;
+		offset += length;
+		return circle;
+	}).join('');
+	const legend = categories.map(category =>
+		`<li><span><i style="background:${category.color}"></i>${category.label}</span><strong>${adminMoney(category.value)}</strong></li>`
+	).join('');
+	target.innerHTML = `<svg class="admin-donut" viewBox="0 0 140 140" role="img" aria-label="Sales by product: eggs ${adminEscape(adminMoney(categories[0].value))}, chicken ${adminEscape(adminMoney(categories[1].value))}, other products ${adminEscape(adminMoney(categories[2].value))}"><circle cx="70" cy="70" r="53" fill="none" stroke="#edf2ef" stroke-width="16"/>${segments}<text x="70" y="67" text-anchor="middle" class="admin-donut-value">${adminEscape(adminMoney(total))}</text><text x="70" y="84" text-anchor="middle" class="admin-donut-caption">gross sales</text></svg><ul class="admin-category-legend">${legend}</ul>`;
 }
 
 function renderOverviewChart(target, sales) {
@@ -369,44 +523,36 @@ function renderOverviewChart(target, sales) {
 	const left = 46;
 	const top = 14;
 	const bottom = 35;
+	const right = 12;
 	const plotHeight = height - top - bottom;
 	const maxValue = Math.max(...sales.map(row => Number(row.gross_sales) || 0), 1);
-	const barWidth = Math.min(34, 560 / sales.length);
-	const gap = (width - left - 12) / sales.length;
-	const grid = Array.from({ length: 4 }, (_, index) => {
-		const y = top + plotHeight - index * plotHeight / 3;
-		return `<line class="admin-chart-grid" x1="${left}" y1="${y}" x2="${width - 10}" y2="${y}"/><text class="admin-chart-axis" x="${left - 7}" y="${y + 4}" text-anchor="end">${adminEscape(adminMoney(maxValue * index / 3))}</text>`;
+	const plotWidth = width - left - right;
+	const points = sales.map((item, index) => ({
+		x: left + index * plotWidth / Math.max(sales.length - 1, 1),
+		y: top + plotHeight - (Number(item.gross_sales) || 0) / maxValue * plotHeight,
+		value: Number(item.gross_sales) || 0,
+		date: item.date
+	}));
+	const line = points.map((point, index) =>
+		`${index ? 'L' : 'M'}${point.x.toFixed(1)} ${point.y.toFixed(1)}`
+	).join(' ');
+	const area = `${line} L${points[points.length - 1].x.toFixed(1)} ${top + plotHeight} L${points[0].x.toFixed(1)} ${top + plotHeight} Z`;
+	const grid = Array.from({ length: 5 }, (_, index) => {
+		const y = top + plotHeight - index * plotHeight / 4;
+		return `<line class="admin-chart-grid" x1="${left}" y1="${y}" x2="${width - right}" y2="${y}"/><text class="admin-chart-axis" x="${left - 7}" y="${y + 4}" text-anchor="end">${adminEscape(adminMoney(maxValue * index / 4))}</text>`;
 	}).join('');
-	const bars = sales.map((item, index) => {
-		const eggs = Math.max(0, Number(item.eggs_sales) || 0);
-		const chicken = Math.max(0, Number(item.chicken_sales) || 0);
-		const other = Math.max(0, Number(item.gross_sales) - eggs - chicken);
-		const x = left + index * gap + (gap - barWidth) / 2;
-		const scale = plotHeight / maxValue;
-		const eggsHeight = eggs * scale;
-		const chickenHeight = chicken * scale;
-		const otherHeight = other * scale;
-		const yBase = top + plotHeight;
-		const date = new Date(`${item.date}T12:00:00+08:00`);
-		const label = sales.length <= 8
-			? new Intl.DateTimeFormat(undefined, { weekday: 'short', day: 'numeric', timeZone: 'Asia/Manila' }).format(date)
-			: (index === 0 || index === sales.length - 1 || index % 5 === 0
-				? new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', timeZone: 'Asia/Manila' }).format(date)
-				: '');
-		return `<g><title>${adminEscape(item.date)} · Eggs ${adminEscape(adminMoney(eggs))} · Chicken ${adminEscape(adminMoney(chicken))} · Total ${adminEscape(adminMoney(item.gross_sales))}</title>${eggsHeight ? `<rect class="admin-overview-bar-egg" x="${x}" y="${yBase - eggsHeight}" width="${barWidth}" height="${eggsHeight}" rx="3"/>` : ''}${chickenHeight ? `<rect class="admin-overview-bar-chicken" x="${x}" y="${yBase - eggsHeight - chickenHeight}" width="${barWidth}" height="${chickenHeight}" rx="3"/>` : ''}${otherHeight ? `<rect class="admin-overview-bar-other" x="${x}" y="${yBase - eggsHeight - chickenHeight - otherHeight}" width="${barWidth}" height="${otherHeight}" rx="3"/>` : ''}<text class="admin-chart-axis" x="${x + barWidth / 2}" y="${height - 8}" text-anchor="middle">${adminEscape(label)}</text></g>`;
+	const labels = points.map((point, index) => {
+		if (points.length > 8 && index !== 0 && index !== points.length - 1 && index % 5 !== 0) return '';
+		const date = new Date(`${point.date}T12:00:00+08:00`);
+		const label = new Intl.DateTimeFormat(undefined, {
+			month: 'short', day: 'numeric', timeZone: 'Asia/Manila'
+		}).format(date);
+		return `<text class="admin-chart-axis" x="${point.x.toFixed(1)}" y="${height - 8}" text-anchor="middle">${adminEscape(label)}</text>`;
 	}).join('');
-	target.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Daily gross sales by product type">${grid}${bars}</svg>`;
-}
-
-function renderFulfillment(fulfillment) {
-	const toPack = Number(fulfillment.to_pack || 0);
-	const dispatch = Number(fulfillment.ready_for_dispatch || 0);
-	const delivered = Number(fulfillment.delivered_today || 0);
-	adminQuery('#fulfillment-total').textContent = `${toPack + dispatch} to do`;
-	adminQuery('#dashboard-fulfillment').innerHTML = `
-		<a class="admin-fulfillment-row" href="orders.html"><span class="admin-fulfillment-icon">${adminIconSvg('inventory.html')}</span><span><strong>${toPack}</strong> orders to pack<small>Pending, confirmed, or processing</small><b>Open order queue →</b></span></a>
-		<a class="admin-fulfillment-row" href="deliveries.html?status=shipped"><span class="admin-fulfillment-icon is-dispatch">${adminIconSvg('deliveries.html')}</span><span><strong>${dispatch}</strong> ready for dispatch<small>Orders marked shipped</small><b>Prepare dispatch →</b></span></a>
-		<div class="admin-fulfillment-delivered">${adminIconSvg('delivered')}<span>${delivered} orders delivered today</span></div>`;
+	const markers = points.map(point =>
+		`<circle class="admin-chart-point" cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="3"><title>${adminEscape(point.date)}: ${adminEscape(adminMoney(point.value))}</title></circle>`
+	).join('');
+	target.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Daily gross sales"><defs><linearGradient id="admin-overview-fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#0d9b68" stop-opacity=".2"/><stop offset="100%" stop-color="#0d9b68" stop-opacity="0"/></linearGradient></defs>${grid}<path class="admin-chart-area" d="${area}"/><path class="admin-chart-line" d="${line}"/>${markers}${labels}</svg>`;
 }
 
 function renderLowStock(products) {
@@ -545,9 +691,21 @@ function renderProducts() {
 }
 
 async function loadProducts() {
-	const [products, categoryData] = await Promise.all([getAllProducts(), adminRequest('/categories')]);
+	const [products, categoryData, imageUploadStatus] = await Promise.all([
+		getAllProducts(),
+		adminRequest('/categories'),
+		adminRequest('/products/images/status')
+	]);
 	adminState.products = products;
 	adminState.categories = categoryData.categories || [];
+	productImageUploadsEnabled = imageUploadStatus.enabled === true;
+	const imageInput = adminQuery('#product-image-file');
+	imageInput.hidden = !productImageUploadsEnabled;
+	imageInput.disabled = !productImageUploadsEnabled;
+	imageInput.nextElementSibling.hidden = !productImageUploadsEnabled;
+	if (!productImageUploadsEnabled) {
+		adminQuery('#product-image-status').textContent = 'Image uploads are disabled. Existing product images will be kept.';
+	}
 	applyPageSearch('#product-search');
 	adminQuery('#product-category').innerHTML = '<option value="">Uncategorized</option>' + adminState.categories.map(category =>
 		`<option value="${adminEscape(category.id)}">${adminEscape(category.name)}</option>`
@@ -567,12 +725,91 @@ function openProductDialog(product) {
 	form.elements.category_id.value = product?.category_id ?? '';
 	form.elements.price.value = product?.price ?? '';
 	form.elements.stock.value = product?.stock ?? 0;
-	form.elements.image_url.value = product?.image_url || '';
 	form.elements.description.value = product?.description || '';
 	form.elements.is_active.checked = product ? Boolean(product.is_active) : true;
+	currentProductImageUrl = product?.image_url || null;
 	adminQuery('#product-dialog-title').textContent = product ? 'Edit product' : 'Add product';
 	adminQuery('#product-form-error').textContent = '';
+	adminQuery('#product-image-status').textContent = productImageUploadsEnabled
+		? ''
+		: 'Image uploads are disabled. Existing product images will be kept.';
+	setProductImagePreview(product?.image_url, product ? 'Current image. Choose a file to replace it.' : '');
 	dialog.showModal();
+}
+
+let productImagePreviewUrl;
+let currentProductImageUrl;
+function setProductImagePreview(url, note = '') {
+	if (productImagePreviewUrl) {
+		URL.revokeObjectURL(productImagePreviewUrl);
+		productImagePreviewUrl = undefined;
+	}
+	const image = adminQuery('#product-image-preview');
+	const wrapper = adminQuery('#product-image-preview-wrap');
+	if (!image || !wrapper) return;
+	const safeUrl = adminSafeImageUrl(url);
+	image.src = safeUrl;
+	wrapper.hidden = !safeUrl;
+	adminQuery('#product-image-preview-note').textContent = note;
+}
+
+function previewProductImage(file) {
+	const error = adminQuery('#product-form-error');
+	const status = adminQuery('#product-image-status');
+	if (!file) {
+		setProductImagePreview();
+		status.textContent = '';
+		return;
+	}
+	const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
+	const allowedExtensions = /\.(jpe?g|png|webp)$/i;
+	if (!allowedExtensions.test(file.name) || (file.type && !allowedTypes.has(file.type))) {
+		error.textContent = 'Choose a JPG, JPEG, PNG, or WEBP image.';
+		adminQuery('#product-image-file').value = '';
+		setProductImagePreview(currentProductImageUrl, currentProductImageUrl ? 'Current image. Choose a file to replace it.' : '');
+		return;
+	}
+	if (file.size > 5 * 1024 * 1024) {
+		error.textContent = 'Image must not exceed 5 MB.';
+		adminQuery('#product-image-file').value = '';
+		setProductImagePreview(currentProductImageUrl, currentProductImageUrl ? 'Current image. Choose a file to replace it.' : '');
+		return;
+	}
+	error.textContent = '';
+	setProductImagePreview();
+	productImagePreviewUrl = URL.createObjectURL(file);
+	const image = adminQuery('#product-image-preview');
+	const wrapper = adminQuery('#product-image-preview-wrap');
+	image.src = productImagePreviewUrl;
+	wrapper.hidden = false;
+	adminQuery('#product-image-preview-note').textContent = 'New image preview.';
+	status.textContent = 'Ready to upload when you save the product.';
+}
+
+async function uploadProductImage(file) {
+	const headers = { Accept: 'application/json' };
+	const token = getAdminToken();
+	if (token) headers.Authorization = `Bearer ${token}`;
+	const formData = new FormData();
+	formData.append('image', file);
+	let response;
+	try {
+		response = await fetch(`${ADMIN_API_BASE}/products/images`, {
+			method: 'POST',
+			headers,
+			body: formData
+		});
+	} catch (error) {
+		const reason = error instanceof Error ? ` ${error.message}` : '';
+		throw new Error(`Could not connect to the store API.${reason}`);
+	}
+	const payload = await response.json().catch(() => ({}));
+	if (!response.ok || payload.success === false) {
+		throw new Error(payload.message || `Image upload failed (${response.status})`);
+	}
+	const imageUrl = payload.data?.image_url;
+	if (!imageUrl) throw new Error('Image upload completed without an image URL.');
+	return imageUrl;
 }
 
 async function saveProduct(event) {
@@ -581,18 +818,25 @@ async function saveProduct(event) {
 	if (!form.reportValidity()) return;
 	const formData = new FormData(form);
 	const productId = formData.get('id');
+	const imageFile = formData.get('image_file');
 	const payload = {
 		name: String(formData.get('name')).trim(),
 		category_id: formData.get('category_id') ? Number(formData.get('category_id')) : null,
 		price: Number(formData.get('price')),
 		stock: Number(formData.get('stock')),
-		image_url: String(formData.get('image_url') || '').trim() || null,
 		description: String(formData.get('description') || '').trim() || null,
 		is_active: form.elements.is_active.checked
 	};
 	const submit = form.querySelector('[type="submit"]');
 	submit.disabled = true;
 	try {
+		if (imageFile instanceof File && imageFile.size) {
+			adminQuery('#product-image-status').textContent = 'Uploading image to secure cloud storage…';
+			submit.textContent = 'Uploading image…';
+			payload.image_url = await uploadProductImage(imageFile);
+			adminQuery('#product-image-status').textContent = 'Image uploaded. Saving product…';
+		}
+		submit.textContent = 'Saving product…';
 		await adminRequest(productId ? `/products/${productId}` : '/products', productId ? 'PATCH' : 'POST', payload);
 		adminQuery('#product-dialog').close();
 		await loadProducts();
@@ -602,6 +846,7 @@ async function saveProduct(event) {
 		adminQuery('#product-form-error').textContent = error.message;
 	} finally {
 		submit.disabled = false;
+		submit.textContent = 'Save product';
 	}
 }
 
@@ -1306,6 +1551,14 @@ document.addEventListener('submit', async event => {
 
 adminQuery('#product-add')?.addEventListener('click', () => openProductDialog(null));
 adminQuery('#product-cancel')?.addEventListener('click', () => adminQuery('#product-dialog').close());
+adminQuery('#product-image-file')?.addEventListener('change', event => {
+	previewProductImage(event.currentTarget.files[0]);
+});
+adminQuery('#product-dialog')?.addEventListener('close', () => {
+	setProductImagePreview();
+	adminQuery('#product-image-file').value = '';
+	currentProductImageUrl = null;
+});
 adminQuery('#product-search')?.addEventListener('input', () => { adminPages.products = 1; renderProducts(); });
 adminQuery('#product-filter')?.addEventListener('change', () => { adminPages.products = 1; renderProducts(); });
 adminQuery('#product-category-filter')?.addEventListener('change', () => { adminPages.products = 1; renderProducts(); });

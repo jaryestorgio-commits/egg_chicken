@@ -1,13 +1,98 @@
-from flask import Blueprint, request
+from uuid import uuid4
+
+from flask import Blueprint, current_app, request
 from flask_jwt_extended import verify_jwt_in_request
 from extensions import db
 from models import Category, Product
+from services.image_storage import (
+    ImageStorageError,
+    ImageStorageNotConfigured,
+    upload_product_image,
+)
+from services.notification_service import record_admin_notification
 from services.product_service import set_product_stock
 from utils.auth import current_user, roles_required
 from utils.responses import error_response, success_response
 from utils.validators import parse_money, parse_positive_int, request_data, required_string
 
 products_bp = Blueprint("products", __name__)
+MAX_PRODUCT_IMAGE_SIZE = 5 * 1024 * 1024
+PRODUCT_IMAGE_TYPES = {
+    ".jpg": ("image/jpeg", b"\xff\xd8\xff"),
+    ".jpeg": ("image/jpeg", b"\xff\xd8\xff"),
+    ".png": ("image/png", b"\x89PNG\r\n\x1a\n"),
+    ".webp": ("image/webp", b"RIFF"),
+}
+
+
+@products_bp.post("/images")
+@roles_required("admin")
+def upload_product_image_file():
+    if not current_app.config.get("PRODUCT_IMAGE_UPLOADS_ENABLED"):
+        return error_response(
+            "Product image uploads are disabled. Contact the site administrator.",
+            status=503,
+        )
+
+    uploaded_file = request.files.get("image")
+    if uploaded_file is None:
+        return error_response("Choose a product image to upload", status=400)
+
+    filename = uploaded_file.filename or ""
+    extension = "." + filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    image_type = PRODUCT_IMAGE_TYPES.get(extension)
+    if image_type is None:
+        return error_response(
+            "Validation failed",
+            {"image": "Use a JPG, JPEG, PNG, or WEBP image"},
+            400,
+        )
+
+    image_data = uploaded_file.stream.read(MAX_PRODUCT_IMAGE_SIZE + 1)
+    if len(image_data) > MAX_PRODUCT_IMAGE_SIZE:
+        return error_response(
+            "Validation failed",
+            {"image": "Image must not exceed 5 MB"},
+            400,
+        )
+
+    content_type, signature = image_type
+    valid_signature = image_data.startswith(signature)
+    if extension == ".webp":
+        valid_signature = valid_signature and image_data[8:12] == b"WEBP"
+    if not valid_signature:
+        return error_response(
+            "Validation failed",
+            {"image": "The file contents do not match a supported image format"},
+            400,
+        )
+
+    try:
+        image_url = upload_product_image(image_data, content_type)
+    except ImageStorageNotConfigured:
+        current_app.logger.error("Product image storage is not configured")
+        return error_response(
+            "Product image storage is not configured. Contact the site administrator.",
+            status=503,
+        )
+    except ImageStorageError:
+        return error_response("The image could not be stored. Please try again.", status=502)
+    return success_response({"image_url": image_url}, "Image uploaded")
+
+
+@products_bp.get("/images/status")
+@roles_required("admin")
+def product_image_upload_status():
+    return success_response({"enabled": product_image_uploads_enabled()})
+
+
+def product_image_uploads_enabled():
+    return bool(
+        current_app.config.get("PRODUCT_IMAGE_UPLOADS_ENABLED")
+        and current_app.config.get("CLOUDINARY_CLOUD_NAME")
+        and current_app.config.get("CLOUDINARY_API_KEY")
+        and current_app.config.get("CLOUDINARY_API_SECRET")
+    )
 
 
 def _require_admin_for_inactive_products():
@@ -106,6 +191,14 @@ def create_product():
     db.session.add(product)
     db.session.flush()
     set_product_stock(product, stock)
+    record_admin_notification(
+        f"product-created-{product.id}",
+        "product_update",
+        f"Product added: {product.name}",
+        f"{product.name} was added to the catalog.",
+        "catalog_product",
+        product.id,
+    )
     db.session.commit()
     return success_response({"product": product.to_dict()}, "Product created", 201)
 
@@ -165,6 +258,15 @@ def update_product(product_id):
     if errors:
         db.session.rollback()
         return error_response("Validation failed", errors, 400)
+    if {"name", "price", "stock", "stock_quantity", "category_id", "description", "image_url", "is_active"} & data.keys():
+        record_admin_notification(
+            f"product-updated-{product.id}-{uuid4().hex}",
+            "product_update",
+            f"Product updated: {product.name}",
+            f"{product.name} was updated in the catalog.",
+            "catalog_product",
+            product.id,
+        )
     db.session.commit()
     return success_response({"product": product.to_dict()}, "Product updated")
 
@@ -175,6 +277,16 @@ def delete_product(product_id):
     product = db.session.get(Product, product_id)
     if product is None:
         return error_response("Product not found", status=404)
+    was_active = product.is_active
     product.is_active = False
+    if was_active:
+        record_admin_notification(
+            f"product-hidden-{product.id}-{uuid4().hex}",
+            "product_update",
+            f"Product hidden: {product.name}",
+            f"{product.name} was hidden from the storefront.",
+            "catalog_product",
+            product.id,
+        )
     db.session.commit()
     return success_response({"product": product.to_dict()}, "Product deactivated")

@@ -20,6 +20,12 @@ class Config:
     XENDIT_CALLBACK_TOKEN = os.getenv("XENDIT_CALLBACK_TOKEN", "")
     XENDIT_SUCCESS_URL = os.getenv("XENDIT_SUCCESS_URL", "")
     XENDIT_FAILURE_URL = os.getenv("XENDIT_FAILURE_URL", "")
+    CLOUDINARY_CLOUD_NAME = os.getenv("CLOUDINARY_CLOUD_NAME", "")
+    CLOUDINARY_API_KEY = os.getenv("CLOUDINARY_API_KEY", "")
+    CLOUDINARY_API_SECRET = os.getenv("CLOUDINARY_API_SECRET", "")
+    PRODUCT_IMAGE_UPLOADS_ENABLED = (
+        os.getenv("PRODUCT_IMAGE_UPLOADS_ENABLED", "false").strip().lower() == "true"
+    )
 
     SQLALCHEMY_DATABASE_URI = database_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False

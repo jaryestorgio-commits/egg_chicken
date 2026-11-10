@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from urllib.parse import quote
 
 from flask import Blueprint
 from sqlalchemy import func
@@ -18,6 +19,10 @@ def serialize_notification(notification, read):
         "order": f"orders.html?order={notification.related_id}",
         "product": f"inventory.html?product={notification.related_id}",
         "conversation": f"messages.html?customer={notification.related_id}",
+        "catalog_product": (
+            "products.html?search="
+            f"{quote(notification.title.split(': ', 1)[-1], safe='')}"
+        ),
     }
     return {
         "id": notification.id,

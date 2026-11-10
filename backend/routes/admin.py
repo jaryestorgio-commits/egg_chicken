@@ -471,6 +471,23 @@ def dashboard():
         Order.created_at < end_at,
         active_order,
     ).all()
+    top_products = db.session.query(
+        Product.id,
+        Product.name,
+        Product.image_url,
+        func.sum(OrderItem.quantity).label("units_sold"),
+        func.sum(OrderItem.subtotal).label("sales"),
+    ).join(OrderItem, OrderItem.product_id == Product.id).join(
+        Order, Order.id == OrderItem.order_id
+    ).filter(
+        Order.created_at >= start_at,
+        Order.created_at < end_at,
+        Order.status != "cancelled",
+    ).group_by(
+        Product.id, Product.name, Product.image_url
+    ).order_by(
+        func.sum(OrderItem.quantity).desc(), Product.name.asc()
+    ).limit(5).all()
     daily_sales = {}
     eggs_sold = 0
     chicken_sold = 0
@@ -555,6 +572,16 @@ def dashboard():
         ).count(),
         "order_statuses": status_counts,
         "recent_orders": [serialize_admin_order(order) for order in recent_orders],
+        "top_products": [
+            {
+                "id": product_id,
+                "name": name,
+                "image_url": image_url,
+                "units_sold": int(units_sold),
+                "sales": float(sales or 0),
+            }
+            for product_id, name, image_url, units_sold, sales in top_products
+        ],
         "store_today": store_today.isoformat(),
         "sales_period": {
             "start_date": start_date.isoformat(),
